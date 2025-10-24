@@ -1,7 +1,7 @@
 [project]
 name = "xl-pq-handler"
-version = "0.1.0"
-description = "Add your description here"
+version = "1.0.0"
+description = "A Pythonic Power Query (.pq) File Manager for Excel & Power BI Automation"
 readme = "README.md"
 authors = [
     { name = "tks18", email = "tksudharshan@gmail.com" }

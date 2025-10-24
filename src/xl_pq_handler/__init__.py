@@ -1,1 +1,5 @@
-from handler import XLPowerQueryHandler
+from .handler import XLPowerQueryHandler
+
+__all__ = [
+    "XLPowerQueryHandler"
+]

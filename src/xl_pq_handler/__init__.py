@@ -1,2 +1,1 @@
-def hello() -> str:
-    return "Hello from xl-pq-handler!"
+from handler import XLPowerQueryHandler

@@ -7,7 +7,12 @@ authors = [
     { name = "tks18", email = "tksudharshan@gmail.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "pandas>=2.3.3",
+    "pyperclip>=1.11.0",
+    "pyyaml>=6.0.3",
+    "xlwings>=0.33.16",
+]
 
 [build-system]
 requires = ["uv_build>=0.8.15,<0.9.0"]

@@ -325,7 +325,7 @@ class XLPowerQueryHandler:
             for name in names:
                 entry = self.get_pq_by_name(name)
                 if entry:
-                    self._insert_into_workbook(wb.api, entry)
+                    self._insert_into_workbook(wb, entry)
                     results.append(name)
                 else:
                     logging.warning(f"{name} not found in index.")

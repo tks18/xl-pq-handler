@@ -6,7 +6,6 @@ import argparse  # Import argparse
 # Import the main app class
 from .ui import PQManagerUI
 
-# Make sure all modules from the refactor are found
 sys.path.append(os.path.dirname(__file__))
 
 

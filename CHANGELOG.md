@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.3](https://github.com/tks18/xl-pq-handler/compare/v2.0.2...v2.0.3) (2025-10-26)
+
+
+### Others 🔧
+
+* make the script runnable by renaming the file to __main__ ([81efb1d](https://github.com/tks18/xl-pq-handler/commit/81efb1dc2a75e2f9fef1c3ff526a7099e3ea3428))
+
 ### [2.0.2](https://github.com/tks18/xl-pq-handler/compare/v2.0.1...v2.0.2) (2025-10-26)
 
 

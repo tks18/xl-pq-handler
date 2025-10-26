@@ -249,7 +249,10 @@ class XLPowerQueryHandler:
         version: str = "1.0",
         overwrite: bool = False
     ) -> str:
-        """Create a new .pq file in the root directory and refresh index."""
+        """
+        Creates a new .pq file.
+        --- NEW: Saves to Functions/[CategoryName]/[FileName].pq ---
+        """
         meta = {
             "name": name,
             "category": category,
@@ -259,9 +262,21 @@ class XLPowerQueryHandler:
             "version": version
         }
 
+        # Sanitize name for file
         safe_name = "".join(c for c in name if c.isalnum()
                             or c in (' ', '_', '-')).rstrip()
-        out_path = os.path.join(self.root, f"{safe_name}.pq")
+
+        # --- NEW PATH LOGIC ---
+        # Sanitize category for folder name
+        safe_category = "".join(
+            c for c in category if c.isalnum() or c in (' ', '_', '-')).rstrip()
+        if not safe_category:
+            safe_category = "Uncategorized"
+
+        target_dir = os.path.join(self.root, "Functions", safe_category)
+        os.makedirs(target_dir, exist_ok=True)
+        out_path = os.path.join(target_dir, f"{safe_name}.pq")
+        # --- END NEW LOGIC ---
 
         if os.path.exists(out_path) and not overwrite:
             raise FileExistsError(
@@ -273,17 +288,13 @@ class XLPowerQueryHandler:
             fh.write(fm + body)
 
         logging.info(f"Created new PQ file: {out_path}")
-        self.build_index()  # Refresh the index
+        # We do NOT build index here. The calling function must do it once.
         return out_path
 
-    # --- NEW: Internal helper for extraction ---
-    def _extract_queries_from_workbook(self, wb_api: Any, output_root: Optional[str] = None) -> List[str]:
-        """Internal helper to extract queries from a workbook COM object."""
-        target_root = output_root or self.root
-        if not os.path.exists(target_root):
-            os.makedirs(target_root)
-
-        created_files = []
+    # --- NEW: Core logic to *get* queries ---
+    def _get_queries_from_workbook_api(self, wb_api: Any) -> List[Dict[str, str]]:
+        """Internal helper to read queries from a workbook COM object."""
+        queries_found = []
         queries = wb_api.Queries
 
         if queries.Count == 0:
@@ -292,45 +303,20 @@ class XLPowerQueryHandler:
 
         for q in queries:
             try:
-                body = q.Formula
-                # Create a new .pq file for each
-                out_path = self.create_new_pq(
-                    name=q.Name,
-                    body=body,
-                    category="Extracted",
-                    description=q.Description,
-                    tags=["extracted"],
-                    overwrite=True  # Always overwrite when extracting
-                )
-                created_files.append(out_path)
-                logging.info(f"Saved query: {q.Name} -> {out_path}")
+                queries_found.append({
+                    "name": q.Name,
+                    "formula": q.Formula,
+                    "description": q.Description or ""
+                })
             except Exception as e:
-                logging.error(f"Failed to extract query {q.Name}: {e}")
+                logging.error(f"Failed to read query {q.Name}: {e}")
 
-        return created_files
+        return queries_found
 
-    # --- REFACTORED: extract_from_excel (by file path) ---
-    def extract_from_excel(self, file_path: str, output_root: Optional[str] = None) -> List[str]:
-        """Extract all Power Queries from a specific Excel workbook file."""
-        logging.info(f"Extracting queries from {file_path}...")
-        created_files = []
-        app = xw.App(visible=False)
-        try:
-            wb = app.books.open(file_path)
-            created_files = self._extract_queries_from_workbook(
-                wb.api, output_root)
-        finally:
-            app.quit()
-
-        # Rebuild the index *once* after all files are created
-        if created_files:
-            self.build_index()
-        return created_files
-
-    # --- NEW: extract_from_active_excel ---
-    def extract_from_active_excel(self, output_root: Optional[str] = None) -> List[str]:
-        """Extract all Power Queries from the active Excel workbook."""
-        logging.info("Extracting queries from active Excel instance...")
+    # --- NEW: Public function to *get* queries from active workbook ---
+    def get_queries_from_active_excel(self) -> List[Dict[str, str]]:
+        """Reads all Power Queries from the active Excel workbook."""
+        logging.info("Reading queries from active Excel instance...")
 
         app = xw.apps.active
         if not app:
@@ -341,12 +327,47 @@ class XLPowerQueryHandler:
             raise RuntimeError("No active workbook found.")
 
         logging.info(f"Found active workbook: {wb_api.Name}")
-        created_files = self._extract_queries_from_workbook(
-            wb_api, output_root)
+        return self._get_queries_from_workbook_api(wb_api)
 
-        # Rebuild the index *once*
+    # --- NEW: Public function to *get* queries from a file ---
+    def get_queries_from_excel_file(self, file_path: str) -> List[Dict[str, str]]:
+        """Reads all Power Queries from a specific Excel workbook file."""
+        logging.info(f"Reading queries from {file_path}...")
+        queries_found = []
+        app = xw.App(visible=False)
+        try:
+            wb = app.books.open(file_path)
+            queries_found = self._get_queries_from_workbook_api(wb.api)
+        finally:
+            app.quit()
+        return queries_found
+
+    # --- NEW: Public function to *create* queries from a list ---
+    def create_pqs_from_list(self, queries_to_create: List[Dict[str, str]], category_name: str = "Extracted") -> List[str]:
+        """
+        Takes a list of query dicts and creates .pq files.
+        Builds the index once at the end.
+        """
+        created_files = []
+        for q in queries_to_create:
+            try:
+                out_path = self.create_new_pq(
+                    name=q["name"],
+                    body=q["formula"],
+                    category=category_name,
+                    description=q["description"],
+                    tags=["extracted"],
+                    overwrite=True  # Always overwrite when extracting
+                )
+                created_files.append(out_path)
+            except Exception as e:
+                logging.error(
+                    f"Failed to create file for query {q['name']}: {e}")
+
+        # Rebuild the index *once* after all files are created
         if created_files:
             self.build_index()
+
         return created_files
 
     # ============================================================

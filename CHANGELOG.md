@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.1](https://github.com/tks18/xl-pq-handler/compare/v2.0.0...v2.0.1) (2025-10-26)
+
+
+### Others 🔧
+
+* update pyproject.toml version ([3e88e67](https://github.com/tks18/xl-pq-handler/commit/3e88e670b695ee48194b273f2cd7b46534fe665f))
+
+
+### Bug Fixes 🛠
+
+* **app:** remove unwanted import which caused problems ([6e24830](https://github.com/tks18/xl-pq-handler/commit/6e24830f9aea851aa383dcbc6c588c4053eee1d5))
+
 ## [2.0.0](https://github.com/tks18/xl-pq-handler/compare/v1.1.1...v2.0.0) (2025-10-26)
 
 

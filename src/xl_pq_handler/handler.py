@@ -276,24 +276,22 @@ class XLPowerQueryHandler:
         self.build_index()  # Refresh the index
         return out_path
 
-    def extract_from_excel(self, file_path: str, output_root: Optional[str] = None) -> List[str]:
-        """Extract all Power Queries from an Excel workbook into .pq files."""
+    # --- NEW: Internal helper for extraction ---
+    def _extract_queries_from_workbook(self, wb_api: Any, output_root: Optional[str] = None) -> List[str]:
+        """Internal helper to extract queries from a workbook COM object."""
         target_root = output_root or self.root
         if not os.path.exists(target_root):
             os.makedirs(target_root)
 
-        logging.info(f"Extracting queries from {file_path}...")
         created_files = []
-        app = xw.App(visible=False)
-        try:
-            wb = app.books.open(file_path)
-            queries = wb.api.Queries
+        queries = wb_api.Queries
 
-            if queries.Count == 0:
-                logging.warning("No queries found in workbook.")
-                return []
+        if queries.Count == 0:
+            logging.warning("No queries found in workbook.")
+            return []
 
-            for q in queries:
+        for q in queries:
+            try:
                 body = q.Formula
                 # Create a new .pq file for each
                 out_path = self.create_new_pq(
@@ -301,16 +299,54 @@ class XLPowerQueryHandler:
                     body=body,
                     category="Extracted",
                     description=q.Description,
-                    tags=["extracted"]
+                    tags=["extracted"],
+                    overwrite=True  # Always overwrite when extracting
                 )
                 created_files.append(out_path)
                 logging.info(f"Saved query: {q.Name} -> {out_path}")
+            except Exception as e:
+                logging.error(f"Failed to extract query {q.Name}: {e}")
 
+        return created_files
+
+    # --- REFACTORED: extract_from_excel (by file path) ---
+    def extract_from_excel(self, file_path: str, output_root: Optional[str] = None) -> List[str]:
+        """Extract all Power Queries from a specific Excel workbook file."""
+        logging.info(f"Extracting queries from {file_path}...")
+        created_files = []
+        app = xw.App(visible=False)
+        try:
+            wb = app.books.open(file_path)
+            created_files = self._extract_queries_from_workbook(
+                wb.api, output_root)
         finally:
             app.quit()
 
         # Rebuild the index *once* after all files are created
-        self.build_index()
+        if created_files:
+            self.build_index()
+        return created_files
+
+    # --- NEW: extract_from_active_excel ---
+    def extract_from_active_excel(self, output_root: Optional[str] = None) -> List[str]:
+        """Extract all Power Queries from the active Excel workbook."""
+        logging.info("Extracting queries from active Excel instance...")
+
+        app = xw.apps.active
+        if not app:
+            raise RuntimeError("No active Excel instance found.")
+
+        wb_api = app.api.ActiveWorkbook
+        if not wb_api:
+            raise RuntimeError("No active workbook found.")
+
+        logging.info(f"Found active workbook: {wb_api.Name}")
+        created_files = self._extract_queries_from_workbook(
+            wb_api, output_root)
+
+        # Rebuild the index *once*
+        if created_files:
+            self.build_index()
         return created_files
 
     # ============================================================

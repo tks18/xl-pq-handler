@@ -12,9 +12,6 @@ from .theme import SoP
 from .views import LibraryView, CreateView, ExtractView
 
 INDEX_FILENAME = "index.json"
-# Note: The lock file logic has been removed as it was not fully
-# implemented and can cause issues if the app crashes.
-# A proper implementation would use a library like `filelock`.
 
 
 class PQManagerUI:
@@ -22,7 +19,7 @@ class PQManagerUI:
         ctk.set_appearance_mode("Dark")
 
         self.root = ctk.CTk()
-        self.root.title("Shan's PQ Magic ✨ (Refactored)")
+        self.root.title("Shan's PQ Magic ✨")
         self.root.geometry("1200x750")
         self.root.minsize(1000, 600)
         self.root.configure(fg_color=SoP["BG"])

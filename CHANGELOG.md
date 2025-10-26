@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.2](https://github.com/tks18/xl-pq-handler/compare/v2.0.1...v2.0.2) (2025-10-26)
+
+
+### Code Refactoring 🖌
+
+* **app:** change the title properly ([917155e](https://github.com/tks18/xl-pq-handler/commit/917155edbf9c036069dd7c24b9a356a070116401))
+
+
+### Others 🔧
+
+* update version ([fc98186](https://github.com/tks18/xl-pq-handler/commit/fc981863e62e568e267ff0c5c1be2f2e44c04d6d))
+* update version ([0b3400f](https://github.com/tks18/xl-pq-handler/commit/0b3400fa8d59974b9033ad19cc6ffb19a6fbbc1c))
+
 ### [2.0.1](https://github.com/tks18/xl-pq-handler/compare/v2.0.0...v2.0.1) (2025-10-26)
 
 

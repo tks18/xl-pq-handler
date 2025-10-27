@@ -21,7 +21,7 @@ class PQManagerUI:
         self.root = ctk.CTk()
         self.root.title("Shan's PQ Magic ✨")
         self.root.geometry("1200x750")
-        self.root.minsize(1000, 600)
+        self.root.minsize(1000, 700)
         self.root.configure(fg_color=SoP["BG"])
 
         try:
@@ -92,7 +92,8 @@ class PQManagerUI:
 
         # --- Instantiate Views ---
         # Pass callbacks to the views so they can trigger actions in the main app
-        self.views["library"] = LibraryView(self.main_panel, self.manager)
+        self.views["library"] = LibraryView(
+            self.main_panel, self.manager, self.refresh_all_views)
         self.views["create"] = CreateView(
             self.main_panel,
             self.manager,

@@ -1,5 +1,5 @@
 # dependencies.py
-from typing import List, Dict, Set, Optional
+from typing import List, Dict, Set, Optional, Any
 from .models import PowerQueryMetadata
 from .storage import PQFileStore
 from .utils import get_logger
@@ -122,3 +122,33 @@ class DependencyResolver:
             name for name in ordered_list if name in resolved]
 
         return final_ordered_list
+
+    def get_dependency_tree(self, name: str) -> Dict[str, Any]:
+        """
+        Builds a recursive dictionary representing the dependency
+        tree for a single query.
+        Returns a dict like: {"name": "A", "children": [{"name": "B"}]}
+        """
+        tree = {"name": name, "children": []}
+
+        # Use a set to avoid infinite loops on circular dependencies
+        visited = set()
+
+        def build_tree(current_node_dict, current_name):
+            if current_name in visited:
+                return  # Stop recursion
+
+            visited.add(current_name)
+
+            meta = self.store.get_metadata_by_name(current_name)
+            if not meta or not meta.dependencies:
+                return  # No more children
+
+            for dep_name in meta.dependencies:
+                child_node_dict = {"name": dep_name, "children": []}
+                current_node_dict["children"].append(child_node_dict)
+                # Recurse
+                build_tree(child_node_dict, dep_name)
+
+        build_tree(tree, name)
+        return tree

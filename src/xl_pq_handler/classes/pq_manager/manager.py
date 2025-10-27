@@ -1,12 +1,14 @@
 # manager.py
 import os
 from typing import List, Optional
+import subprocess
+import sys
+
 from .models import PowerQueryMetadata, PowerQueryScript
 from .storage import PQFileStore
 from .excel_service import ExcelQueryService
 from .dependencies import DependencyResolver
 from .utils import get_logger
-from xl_pq_handler.classes.pq_manager import dependencies
 
 logger = get_logger(__name__)
 
@@ -101,11 +103,12 @@ class PQManager:
     def insert_into_excel(
         self,
         names: List[str],
-        file_path: Optional[str] = None
+        file_path: Optional[str] = None,
+        workbook_name: Optional[str] = None
     ) -> None:
         """
         Inserts one or more queries (and their dependencies)
-        into an Excel file (or active).
+        into an Excel file (or active/specified open workbook).
         """
         logger.info(f"Starting insertion for: {names}")
 
@@ -129,6 +132,7 @@ class PQManager:
             self.excel.insert_queries_into_workbook(
                 scripts=scripts_to_insert,
                 file_path=file_path,
+                workbook_name=workbook_name,
                 delete_existing=True
             )
 
@@ -137,3 +141,82 @@ class PQManager:
         except Exception as e:
             logger.error(f"Insertion failed: {e}")
             raise  # Re-raise for the caller
+
+    def open_in_editor(self, name: str):
+        """
+        Opens the .pq file for the given query name in an external editor.
+        Tries VS Code first, then falls back to Notepad (Windows) or default OS handler.
+        """
+        logger.info(f"Attempting to open '{name}' in external editor...")
+        script = self.store.get_script_by_name(name)
+        if not script:
+            raise FileNotFoundError(f"Script '{name}' not found.")
+
+        path = script.meta.path
+
+        try:
+            # Try launching VS Code
+            subprocess.Popen(["code", path])
+            logger.info(f"Launched VS Code for {path}")
+        except FileNotFoundError:
+            logger.warning(
+                "VS Code not found in PATH. Trying default editor...")
+            try:
+                # Fallback for Windows: notepad or default .pq handler
+                if sys.platform == "win32":
+                    os.startfile(path)
+                # Fallback for macOS/Linux
+                elif sys.platform == "darwin":
+                    subprocess.Popen(["open", path])
+                else:
+                    subprocess.Popen(["xdg-open", path])
+            except Exception as e:
+                logger.error(f"Failed to open file in default editor: {e}")
+                raise IOError(
+                    f"Could not open file in VS Code or default editor.")
+        except Exception as e:
+            logger.error(f"Error opening in VS Code: {e}")
+            raise
+
+    def update_query_metadata(self, old_name: str, new_meta: PowerQueryMetadata):
+        """
+        Updates a query's metadata. Handles file moves if name or category changes.
+        """
+        logger.info(f"Updating metadata for '{old_name}'...")
+
+        # 1. Get the original script's metadata and body
+        old_meta = self.store.get_metadata_by_name(old_name)
+        if not old_meta:
+            raise FileNotFoundError(f"Query '{old_name}' not found in index.")
+
+        old_path = old_meta.path
+        script = self.store.get_script_by_name(old_name)
+
+        if script is None:
+            raise FileNotFoundError(f"Query '{old_name}' not found in store.")
+
+        body = script.body
+
+        # 2. The new_meta object (from the UI) already has the new path
+        new_script = PowerQueryScript(meta=new_meta, body=body)
+
+        # 3. Save the script to its new path
+        # This creates the new file.
+        try:
+            self.store.save_script(new_script, overwrite=True)
+        except Exception as e:
+            raise IOError(
+                f"Failed to save updated file at {new_meta.path}: {e}")
+
+        # 4. If path changed, delete the old file
+        if old_path != new_meta.path:
+            try:
+                os.remove(old_path)
+                logger.info(f"Removed old file at {old_path}")
+            except OSError as e:
+                logger.warning(f"Failed to remove old file at {old_path}: {e}")
+                # Don't fail the whole operation, just warn.
+
+        # 5. Rebuild index to make all changes live
+        self.build_index()
+        logger.info(f"Successfully updated '{old_name}' to '{new_meta.name}'.")

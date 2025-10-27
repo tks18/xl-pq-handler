@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.1.0](https://github.com/tks18/xl-pq-handler/compare/v2.0.3...v2.1.0) (2025-10-27)
+
+
+### Features 🔥
+
+* **ui/extract:** feature: allow extraction from multiple open workbooks ([84f2a7c](https://github.com/tks18/xl-pq-handler/commit/84f2a7c3eae8e885c9ee15ad4d80d5ba3e817cdf))
+* **ui/library:** allow insertion into multiple wbs not only active, add context menu to edit ([908713c](https://github.com/tks18/xl-pq-handler/commit/908713c033b20b82edcf96cab2bf9d43df3a28a9))
+* **ui:** update the entire ui & manager to support the new changes ([3109a5b](https://github.com/tks18/xl-pq-handler/commit/3109a5bd68be9fe46140601e9a0a538d69d1b90e))
+
+
+### Docs 📃
+
+* **readme:** update readme, bump to version 2.1.0 ([9079349](https://github.com/tks18/xl-pq-handler/commit/907934980db99cc6e8c6400eb639b129e7807819))
+
 ### [2.0.3](https://github.com/tks18/xl-pq-handler/compare/v2.0.2...v2.0.3) (2025-10-26)
 
 

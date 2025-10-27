@@ -1,10 +1,13 @@
 # ui_library_view.py
 import tkinter as tk
 from tkinter import ttk, messagebox
+from typing import Callable
 import customtkinter as ctk
 import threading
+import os
 import pandas as pd
-from ...classes import PQManager
+
+from ...classes import PQManager, PowerQueryScript, PowerQueryMetadata
 from ..theme import SoP
 
 
@@ -14,7 +17,7 @@ class LibraryView(ctk.CTkFrame):
     search, filters, and info panels.
     """
 
-    def __init__(self, parent, manager: PQManager):
+    def __init__(self, parent, manager: PQManager, refresh_callback: Callable):
         super().__init__(parent, fg_color="transparent")
         self.manager = manager
 
@@ -23,8 +26,11 @@ class LibraryView(ctk.CTkFrame):
         self.cat_vars = {}
         self.sort_column = "Name"
         self.sort_asc = True
+        self.open_workbooks_for_insert = []
+        self.refresh_callback = refresh_callback
 
         self._build_widgets()
+        self._build_context_menu()
         self.refresh_data()  # Load initial data
 
     def _build_widgets(self):
@@ -132,6 +138,7 @@ class LibraryView(ctk.CTkFrame):
         self.bottom_tabview.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
         self.bottom_tabview.add("Description")
         self.bottom_tabview.add("Dependencies")
+        self.bottom_tabview.add("Graph")
         self.bottom_tabview.add("Preview")
 
         self.desc = ctk.CTkTextbox(self.bottom_tabview.tab(
@@ -143,6 +150,13 @@ class LibraryView(ctk.CTkFrame):
             "Dependencies"), fg_color="transparent", text_color=SoP["TEXT_DIM"])
         self.deps.pack(fill="both", expand=True, padx=5, pady=5)
         self.deps.configure(state="disabled")
+
+        self.graph_view = ctk.CTkTextbox(self.bottom_tabview.tab(
+            "Graph"), fg_color="transparent", text_color=SoP["TEXT"],
+            font=("Consolas", 12))  # Monospaced font
+        self.graph_view.pack(fill="both", expand=True, padx=5, pady=5)
+        self.graph_view.configure(state="disabled")
+        self.graph_view.tag_config("dim", foreground=SoP["TEXT_DIM"])
 
         self.preview = ctk.CTkTextbox(
             self.bottom_tabview.tab("Preview"),
@@ -161,22 +175,256 @@ class LibraryView(ctk.CTkFrame):
         action_panel = ctk.CTkFrame(
             bottom_frame, fg_color="transparent", width=180)
         action_panel.grid(row=0, column=1, sticky="ne", padx=5)
+        action_panel.grid_columnconfigure(0, weight=1)
+
+        self.insert_wb_menu = ctk.CTkOptionMenu(
+            action_panel,
+            values=["Default (Active)"],
+            fg_color=SoP["EDITOR"],
+            button_color=SoP["ACCENT_DARK"],
+            button_hover_color=SoP["ACCENT"],
+            text_color=SoP["TEXT_DIM"],
+            height=35,
+            dynamic_resizing=False
+        )
+        self.insert_wb_menu.grid(row=0, column=0, sticky="ew", pady=(0, 5))
+
+        self.refresh_insert_wbs_btn = ctk.CTkButton(
+            action_panel,
+            text="🔄",
+            width=35,
+            height=35,
+            font=ctk.CTkFont(size=20),
+            command=self._refresh_workbook_list_for_insert,
+            fg_color=SoP["TREE_FIELD"],
+            hover_color=SoP["ACCENT_HOVER"]
+        )
+        self.refresh_insert_wbs_btn.grid(
+            row=0, column=1, padx=(5, 0), pady=(0, 5))
+
         self.insert_btn = ctk.CTkButton(
             action_panel, text="➕ Insert Selected", height=40,
             command=self._threaded_insert_selected, fg_color=SoP["ACCENT"],
             hover_color=SoP["ACCENT_HOVER"], text_color="#000000",
             font=ctk.CTkFont(weight="bold"))
-        self.insert_btn.pack(fill="x", pady=(0, 10))
+        self.insert_btn.grid(row=1, column=0, columnspan=2,
+                             sticky="ew", pady=(5, 10))
         self.clear_btn = ctk.CTkButton(
             action_panel, text="Clear Selection", height=35,
             command=self.clear_selection, fg_color="transparent", border_width=1,
             border_color=SoP["TEXT_DIM"], hover_color=SoP["TREE_FIELD"],
             text_color=SoP["TEXT_DIM"])
-        self.clear_btn.pack(fill="x", pady=5)
+        self.clear_btn.grid(row=2, column=0, columnspan=2, sticky="ew", pady=5)
         self.selection_count_lbl = ctk.CTkLabel(
             action_panel, text="Selected: 0", text_color=SoP["TEXT_DIM"])
-        self.selection_count_lbl.pack(fill="x", pady=10)
+        self.selection_count_lbl.grid(
+            row=3, column=0, columnspan=2, sticky="ew", pady=10)
         self.clear_selection()
+        self._refresh_workbook_list_for_insert()
+
+    def _build_context_menu(self):
+        """Creates the right-click context menu."""
+        self.context_menu = tk.Menu(self.tree, tearoff=0)
+        self.context_menu.add_command(
+            label="Edit Metadata...",
+            command=self._on_edit_metadata
+        )
+        self.context_menu.add_command(
+            label="Open in VS Code / Editor",
+            command=self._on_open_in_editor
+        )
+        self.context_menu.add_separator()
+        self.context_menu.add_command(
+            label="Delete", command=self._on_delete_query)
+
+        # Bind to the Treeview
+        self.tree.bind("<Button-3>", self._show_context_menu)  # Windows/Linux
+        self.tree.bind("<Button-2>", self._show_context_menu)  # macOS
+
+    def _refresh_workbook_list_for_insert(self):
+        """Gets open workbooks and populates the insert dropdown."""
+        try:
+            self.open_workbooks_for_insert = self.manager.excel.list_open_workbooks()
+
+            # Prepare values, always adding the Default option first
+            menu_values = ["Default (Active)"] + \
+                self.open_workbooks_for_insert
+
+            self.insert_wb_menu.configure(values=menu_values)
+            self.insert_wb_menu.set("Default (Active)")
+
+            if not self.open_workbooks_for_insert:
+                self.insert_wb_menu.configure(
+                    text_color_disabled=SoP["TEXT_DIM"])
+
+        except Exception as e:
+            print(f"Could not refresh workbook list for insert: {e}")
+            self.insert_wb_menu.configure(
+                values=["Error (Refresh)"], state="disabled")
+
+    def _get_selected_query_name(self) -> str | None:
+        """Helper to get the name of the currently focused query."""
+        selection = self.tree.focus()
+        if not selection:
+            return None
+        return self.tree.item(selection, "values")[0]
+
+    def _on_open_in_editor(self):
+        """Callback for 'Open in Editor' menu item."""
+        name = self._get_selected_query_name()
+        if not name:
+            return
+
+        try:
+            self.manager.open_in_editor(name)
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not open editor:\n{e}")
+
+    def _on_edit_metadata(self):
+        """Callback for 'Edit Metadata' menu item."""
+        name = self._get_selected_query_name()
+        if not name:
+            return
+
+        script = self.manager.get_script(name)
+        if not script:
+            messagebox.showerror("Error", f"Could not find script '{name}'")
+            return
+
+        # --- Launch the Edit Dialog ---
+        # We need a new Toplevel window. We'll build it here.
+        # For a cleaner refactor, you'd move this EditDialog to its own file.
+        self._open_edit_dialog(script)
+
+    def _on_delete_query(self):
+        """Callback for 'Delete' menu item."""
+        name = self._get_selected_query_name()
+        if not name:
+            return
+
+        if not messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete '{name}'?\n\nThis action cannot be undone."):
+            return
+
+        try:
+            self.manager.store.delete_script(name)
+            # We must tell the main app to refresh everything
+            self.refresh_callback()
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not delete query:\n{e}")
+
+    def _open_edit_dialog(self, script: 'PowerQueryScript'):
+        """
+        Creates and manages the 'Edit Metadata' dialog.
+        This is a new Toplevel window, similar to CreateView.
+        """
+        dialog = ctk.CTkToplevel(self)
+        dialog.title(f"Edit: {script.meta.name}")
+        dialog.geometry("700x700")
+        dialog.transient()
+        dialog.grab_set()
+        dialog.configure(fg_color=SoP["BG"])
+
+        form_frame = ctk.CTkScrollableFrame(
+            dialog, fg_color=SoP["FRAME"], corner_radius=8)
+        form_frame.pack(fill="both", expand=True, padx=15, pady=15)
+        form_frame.grid_columnconfigure(1, weight=1)
+
+        def create_form_row(parent, label, row):
+            ctk.CTkLabel(parent, text=label, text_color=SoP["TEXT_DIM"]).grid(
+                row=row, column=0, sticky="w", padx=10, pady=8)
+            entry = ctk.CTkEntry(
+                parent, border_color=SoP["TREE_FIELD"],
+                fg_color=SoP["EDITOR"], text_color=SoP["TEXT"])
+            entry.grid(row=row, column=1, sticky="ew", padx=10, pady=8)
+            return entry
+
+        entry_name = create_form_row(form_frame, "Name*", 0)
+        entry_category = create_form_row(form_frame, "Category", 1)
+        entry_version = create_form_row(form_frame, "Version", 2)
+        entry_tags = create_form_row(form_frame, "Tags (csv)", 3)
+        entry_deps = create_form_row(form_frame, "Dependencies (csv)", 4)
+
+        ctk.CTkLabel(form_frame, text="Description", text_color=SoP["TEXT_DIM"]).grid(
+            row=5, column=0, sticky="w", padx=10, pady=8)
+        text_desc = ctk.CTkTextbox(
+            form_frame, height=80, border_color=SoP["TREE_FIELD"],
+            fg_color=SoP["EDITOR"], text_color=SoP["TEXT"])
+        text_desc.grid(row=5, column=1, sticky="ew", padx=10, pady=8)
+
+        ctk.CTkLabel(form_frame, text="Query Body (Read-Only)", text_color=SoP["TEXT_DIM"]).grid(
+            row=6, column=0, sticky="nw", padx=10, pady=8)
+        text_body = ctk.CTkTextbox(
+            form_frame, height=200, border_color=SoP["TREE_FIELD"],
+            fg_color=SoP["EDITOR"], text_color=SoP["TEXT_DIM"], font=("Consolas", 12))
+        text_body.grid(row=6, column=1, sticky="ew", padx=10, pady=8)
+
+        # --- Pre-fill the form ---
+        entry_name.insert(0, script.meta.name)
+        entry_category.insert(0, script.meta.category)
+        entry_version.insert(0, script.meta.version)
+        entry_tags.insert(0, ", ".join(script.meta.tags))
+        entry_deps.insert(0, ", ".join(script.meta.dependencies))
+        text_desc.insert("1.0", script.meta.description)
+        text_body.insert("1.0", script.body)
+        text_body.configure(state="disabled")  # Make body read-only
+
+        def on_save():
+            try:
+                # 1. Get all new values from form
+                new_name = entry_name.get().strip()
+                new_category = entry_category.get().strip() or "Uncategorized"
+
+                # 2. Construct the new path (logic copied from create_view)
+                safe_name = "".join(
+                    c for c in new_name if c.isalnum() or c in (' ', '_', '-')).rstrip()
+                safe_category = "".join(c for c in new_category if c.isalnum() or c in (
+                    ' ', '_', '-')).rstrip() or "Uncategorized"
+
+                new_path = os.path.join(
+                    self.manager.store.root, safe_category, f"{safe_name}.pq")
+
+                # 3. Create the new PowerQueryMetadata object
+                new_meta = PowerQueryMetadata(
+                    name=new_name,
+                    category=new_category,
+                    version=entry_version.get().strip() or "1.0",
+                    tags=[t.strip()
+                          for t in entry_tags.get().split(",") if t.strip()],
+                    dependencies=[d.strip()
+                                  for d in entry_deps.get().split(",") if d.strip()],
+                    description=text_desc.get("1.0", "end").strip(),
+                    path=os.path.abspath(new_path)
+                )
+
+                # 4. Call the manager to do the update
+                self.manager.update_query_metadata(script.meta.name, new_meta)
+
+                # 5. Refresh the UI (via the main app)
+                # self.master.master is the main App window
+                self.refresh_callback()  # type: ignore
+
+                dialog.destroy()
+
+            except Exception as e:
+                messagebox.showerror(
+                    "Save Error", f"Failed to save changes:\n{e}", parent=dialog)
+
+        save_btn = ctk.CTkButton(
+            dialog, text="💾 Save Changes", height=40,
+            command=on_save, fg_color=SoP["ACCENT"],
+            hover_color=SoP["ACCENT_HOVER"], text_color="#000000",
+            font=ctk.CTkFont(weight="bold"))
+        save_btn.pack(side="bottom", fill="x", padx=15, pady=15)
+
+    def _show_context_menu(self, event):
+        """Shows the context menu at the cursor's location."""
+        iid = self.tree.identify_row(event.y)
+        if iid:
+            # Select the row under the cursor
+            self.tree.selection_set(iid)
+            self.tree.focus(iid)
+            # Display the menu
+            self.context_menu.post(event.x_root, event.y_root)
 
     def _ensure_df_columns(self):
         """Ensure dataframe has all expected columns after loading."""
@@ -326,6 +574,17 @@ class LibraryView(ctk.CTkFrame):
         self.clear_selection()
 
     # --- Selection & Sorting ---
+    def _format_tree_string(self, node: dict, indent: str = "") -> str:
+        """Recursively formats the dependency tree dict into a string."""
+        tree_str = f"{indent}• {node['name']}\n"
+
+        children = node.get("children", [])
+        for i, child in enumerate(children):
+            is_last = (i == len(children) - 1)
+            child_indent = indent + ("    " if is_last else "│   ")
+            tree_str += self._format_tree_string(child, child_indent)
+        return tree_str
+
     def _on_tree_select(self, event=None):
         sels = self.tree.selection()
         self.selection_count_lbl.configure(text=f"Selected: {len(sels)}")
@@ -355,6 +614,8 @@ class LibraryView(ctk.CTkFrame):
         self.deps.delete("1.0", "end")
         self.preview.configure(state="normal")
         self.preview.delete("1.0", "end")
+        self.graph_view.configure(state="normal")
+        self.graph_view.delete("1.0", "end")
 
         if len(sels) == 1:
             name = self.tree.item(sels[0], "values")[0]
@@ -374,25 +635,39 @@ class LibraryView(ctk.CTkFrame):
 
                 # Update Preview
                 self.preview.insert("1.0", script.body)
+
+                try:
+                    tree_data = self.manager.resolver.get_dependency_tree(name)
+                    tree_string = self._format_tree_string(tree_data)
+                    self.graph_view.insert("1.0", tree_string)
+                except Exception as e:
+                    self.graph_view.insert(
+                        "1.0", f"Could not build graph: {e}", ("dim",))
             else:
                 self.deps.insert(
                     "1.0", "Could not find query in index.", ("dim",))
                 self.preview.insert(
                     "1.0", f"Error: Could not find or read file for {name}.", ("dim",))
+                self.graph_view.insert("1.0", "Query not found.", ("dim",))
 
         elif len(sels) > 1:
             self.deps.insert(
                 "1.0", "Select a single query to view dependencies.", ("dim",))
             self.preview.insert(
                 "1.0", "Select a single query to preview its M code.", ("dim",))
+            self.graph_view.insert(
+                "1.0", "Select a single query to view its dependency graph.", ("dim",))
         else:
             self.deps.insert(
                 "1.0", "Select a query to view its dependencies.", ("dim",))
             self.preview.insert(
                 "1.0", "Select a query to preview its M code.", ("dim",))
+            self.graph_view.insert(
+                "1.0", "Select a query to view its dependency graph.", ("dim",))
 
         self.deps.configure(state="disabled")
         self.preview.configure(state="disabled")
+        self.graph_view.configure(state="disabled")
 
     def clear_selection(self):
         for sel in self.tree.selection():
@@ -472,22 +747,31 @@ class LibraryView(ctk.CTkFrame):
 
         names = [self.tree.item(iid, "values")[0] for iid in sels]
 
+        selected_target = self.insert_wb_menu.get()
+        workbook_name_arg = None  # Default
+        if selected_target != "Default (Active)":
+            workbook_name_arg = selected_target
+
+        print(workbook_name_arg)
+
         threading.Thread(
             target=self.insert_selected_functions,
-            args=(names,),
+            args=(names, workbook_name_arg),
             daemon=True
         ).start()
 
-    def insert_selected_functions(self, names: list[str]):
+    def insert_selected_functions(self, names: list[str], workbook_name: str | None):
         """
         Thread target to insert queries.
         Uses the new manager API with try/except.
         """
         try:
             # NEW API CALL: Simple, clean, and handles dependencies.
-            self.manager.insert_into_excel(names=names)
+            self.manager.insert_into_excel(
+                names=names, workbook_name=workbook_name)
 
-            summary = f"✅ Successfully Inserted {len(names)} Queries (and their dependencies):\n"
+            target_desc = workbook_name if workbook_name else "the active workbook"
+            summary = f"✅ Successfully Inserted {len(names)} Queries (and dependencies) into:\n{target_desc}"
             summary += "\n".join(f"  - {name}" for name in names)
 
             self.master.after(0, lambda: messagebox.showinfo(

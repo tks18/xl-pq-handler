@@ -1,6 +1,6 @@
 {
   "name": "xl-pq-handler",
-  "version": "2.0.3",
+  "version": "2.1.0",
   "description": "A Pythonic Power Query (.pq) File Manager for Excel & Power BI Automation",
   "main": "index.js",
   "repository": "https://github.com/tks18/xl-pq-handler",

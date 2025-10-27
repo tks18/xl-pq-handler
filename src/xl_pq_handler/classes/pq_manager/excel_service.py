@@ -37,26 +37,81 @@ class ExcelQueryService:
         except Exception as e:
             raise RuntimeError(f"Failed to connect to active Excel: {e}")
 
+    def list_open_workbooks(self) -> List[str]:
+        """
+        Lists the names of all currently open Excel workbooks.
+        Returns a list of strings.
+        """
+        try:
+            app = xw.apps.active
+            if not app:
+                logger.warning("No active Excel instance found.")
+                return []
+
+            return [book.name for book in app.books]
+        except Exception as e:
+            logger.error(f"Failed to list open workbooks: {e}")
+            return []
+
+    def get_queries_from_open_workbook(self, workbook_name: str) -> List[Dict[str, str]]:
+        """
+        Connects to an already-open workbook by name and gets its queries.
+        This *must* be called from the thread that will use the object.
+        """
+        logger.info(f"Connecting to open workbook: {workbook_name}")
+        try:
+            app = xw.apps.active
+            if not app:
+                raise RuntimeError("No active Excel instance found.")
+
+            # Find the book by name
+            wb = app.books[workbook_name]
+            if not wb:
+                raise FileNotFoundError(
+                    f"Open workbook '{workbook_name}' not found.")
+
+            # Now we call our existing logic using the wb.api object
+            # that was created ON THIS THREAD.
+            return self.get_queries_from_workbook(wb_api=wb.api)
+
+        except Exception as e:
+            logger.error(
+                f"Failed to get queries from open book {workbook_name}: {e}")
+            raise  # Re-raise the exception for the UI to catch
+
     def get_queries_from_workbook(
-        self, file_path: Optional[str] = None
+        self,
+        file_path: Optional[str] = None,
+        wb_api: Optional[Any] = None
     ) -> List[Dict[str, str]]:
         """
         Reads all Power Queries from an Excel workbook.
-        If file_path is None, uses the active workbook.
+        Priority: wb_api > file_path > active_workbook
         """
         app_to_quit = None
         wb_to_close = None
 
         try:
-            if file_path:
+            if wb_api:
+                # Use the provided workbook API object
+                logger.info(
+                    f"Reading queries from provided workbook: {wb_api.Name}")
+            elif file_path:
                 wb_api, app_to_quit, wb_to_close = self._get_wb_api_from_path(
                     file_path)
                 logger.info(f"Reading queries from {file_path}...")
             else:
+                # Fallback to active workbook
                 wb_api = self._get_active_wb_api()
+                if not wb_api:
+                    logger.warning("No active workbook found.")
+                    return []
                 logger.info(
                     f"Reading queries from active workbook: {wb_api.Name}")
 
+            if not wb_api:
+                logger.warning("No active workbook found.")
+                return []
             queries_found = []
             queries = wb_api.Queries
             if queries.Count == 0:
@@ -85,17 +140,27 @@ class ExcelQueryService:
         self,
         scripts: List[PowerQueryScript],
         file_path: Optional[str] = None,
+        workbook_name: Optional[str] = None,
         delete_existing: bool = True
     ) -> None:
         """
         Inserts a list of PowerQueryScript objects into an Excel workbook.
         If file_path is None, uses the active workbook.
+        Priority: workbook_name > file_path > active_workbook
         """
         app_to_quit = None
         wb_to_close = None
 
         try:
-            if file_path:
+            if workbook_name:
+                logger.info(f"Connecting to open workbook: {workbook_name}")
+                app = xw.apps.active
+                if not app:
+                    raise RuntimeError(
+                        "No active Excel instance found to connect to.")
+                wb_api = app.books[workbook_name].api
+                logger.info(f"Inserting queries into {workbook_name}...")
+            elif file_path:
                 wb_api, app_to_quit, wb_to_close = self._get_wb_api_from_path(
                     file_path)
                 logger.info(f"Inserting queries into {file_path}...")

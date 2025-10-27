@@ -1,4 +1,5 @@
-# 🌈 xl-pq-handler  
+# 🌈 xl-pq-handler
+
 > 🧩 A Pythonic Power Query (.pq) File Manager for Excel & Power BI Automation
 
 [![PyPI Version](https://img.shields.io/pypi/v/xl-pq-handler.svg?color=4CAF50&logo=python&logoColor=white)](https://pypi.org/project/xl-pq-handler/)
@@ -9,200 +10,207 @@
 
 ### 🧠 What is `xl-pq-handler`?
 
-`xl-pq-handler` is a **single-class Python library** built for developers, data analysts, and automation engineers who work with **Power Query (.pq)** files in Excel or Power BI.  
+`xl-pq-handler` is a **Python UI App + library** built for developers, data analysts, and automation engineers who work with **Power Query (.pq)** files in Excel or Power BI.
 
 It lets you:
-- 🔍 Parse, search, and index `.pq` scripts  
-- 📋 Copy Power Query code to clipboard  
-- 🪄 Insert queries directly into Excel workbooks  
-- 🧾 Maintain YAML-based metadata (name, category, tags, description, version)  
-- 🔁 Export, validate, and refresh PQ indexes  
-- ⚡ Batch-insert queries for rapid Excel automation  
 
-All from Python. No manual clicks. No clutter. 🚀  
+- 🔍 Parse, search, and index `.pq` scripts
+- 📋 Copy Power Query code to clipboard
+- 🪄 Insert queries directly into Excel workbooks
+- 🧾 Maintain YAML-based metadata (name, category, tags, description, version)
+- 🔁 Export, validate, and refresh PQ indexes
+- ⚡ Batch-insert queries for rapid Excel automation
+
+All from Python. No manual clicks. No clutter. 🚀
 
 ---
 
-## 📦 Installation
+> Stop the cap. Managing Power Query `.pq` files is low-key a nightmare.
+>
+> **This tool is the ultimate glow-up for your M-code.** 💅
+>
+> It's not just a library; it's your new **Power Query IDE**.
+
+---
+
+### 🫠 The Struggle is Real (Before)
+
+- Copy-pasting M-code between 8 different Excel files.
+- Forgetting which queries depend on `fn_Helper_v2_final`.
+- Your `Downloads/PQ` folder looks like a bomb went off.
+- Manually updating a query in 3 different workbooks. 💀
+
+### 😎 The Vibe (After)
+
+- Launch a sleek UI that shows your _entire_ `.pq` library.
+- Right-click a query -\> "Insert" -\> pick your open Excel file from a **dropdown**. Done.
+- Right-click -\> "Edit Metadata" -\> change `category` -\> the app **auto-moves the file** to the new folder. 🤯
+- Click the "Graph" tab to see all the dependencies. No more guessing.
+
+This is that **main character energy** for your data workflow.
+
+---
+
+## ✨ The Features _Actually_ Slap
+
+This tool is a whole mood. It's a UI app _and_ a Python library.
+
+### 🖥️ **The UI App (Your New BFF)**
+
+Forget scripts. Just launch the app from your terminal. This is your mission control.
+`python -m xl_pq_handler "path/to/your/repo"`
+
+### 📥 **Smart Extract (The "Yoink")**
+
+- **Yank from File:** Pick any `.xlsx` and rip all its queries.
+- **Yank from Open WB:** Don't even know where the file is? Just pick from a **dropdown of all your open workbooks**. Bet.
+
+### 🪄 **Dependency-Aware Insert (The "Yeet")**
+
+- Select a query. This tool auto-finds **all its dependencies**.
+- It inserts them _in the correct order_.
+- **Pick your target:** Don't just spray and pray into your active workbook. A **dropdown shows all open workbooks** so you can snipe the exact one you want.
+
+### ✏️ **Edit & Sync (The "Glow-Up")**
+
+- Right-click any query to **edit its metadata** (name, category, tags, deps).
+- **The best part:** You change the `category` from "Staging" to "Production"? The app **auto-moves the `.pq` file** from the `Staging/` folder to the `Production/` folder. IYKYK. 🤯
+
+### 🔗 **See the Receipts (Dependency Graph)**
+
+- Tired of guessing what a query needs?
+- Click a query -\> click the **"Graph" tab**.
+- See a beautiful tree of all its dependencies, right there. No cap.
+
+### 💻 **"I'm Out" (External Editor)**
+
+- Need to edit the _actual_ M-code?
+- Right-click -\> "Open in Editor."
+- This instantly opens the file in **VS Code** (or Notepad, if you're basic) for you to edit. Save, go back to the app, hit refresh. ✨
+
+### 🧠 **The Brain (For Scripting)**
+
+- Under the hood is the `PQManager`, a sick Python library.
+- Use it in your own automation scripts for all the features above, but headless. 🤖
+
+---
+
+## 📦 Get it Already (Installation)
 
 ```bash
 pip install xl-pq-handler
-````
+```
 
-**Dependencies**
-This package uses:
-
-* `xlwings` – for Excel integration
-* `pyperclip` – for clipboard operations
-* `pandas`, `yaml` – for data wrangling
-* `csv`, `json`, `os`, `logging` – built-in utilities
+_(^ above installs all of the dependencies - `customtkinter`, `xlwings`, `pydantic`, `pyyaml`, `pandas`, & `filelock` too\!)_
 
 ---
 
-## 🧩 Quick Start
+## 🚀 How to Vibe
+
+### 1\. The Main Way (The UI) 💅
+
+This is what you want. Open your terminal and run this.
+
+```bash
+# Launch the UI
+# Point it at the folder where you store your .pq files
+python -m xl_pq_handler "D:\My-Power-Query-Repo"
+```
+
+_(If you set up the script, you can just do `pq-magic "..."`)_
+
+Then just... click buttons. It's that easy.
+
+### 2\. The Automation Way (Python Script) 🤓
+
+For your `main.py` automation scripts, use the `PQManager`.
 
 ```python
-from xl_pq_handler import XLPowerQueryHandler
+from xl_pq_handler import PQManager
 
-# Initialize handler (your PQ root folder)
-handler = XLPowerQueryHandler(r"C:\MyPQFiles")
+# Point it at your repo
+manager = PQManager(r"D:\My-Power-Query-Repo")
 
-# 🔧 Build or refresh index
-handler.build_index()
+# Rebuild index (good practice)
+manager.build_index()
 
-# 📚 Read all indexed queries
-entries = handler.read_index()
+# ---- SCRIPTING EXAMPLE ----
+# Insert "FinalReport" + all its dependencies
+# into a *specific* open workbook named "Dashboard.xlsm"
 
-# 🔍 Search for queries
-matches = handler.search_pq("sales")
+queries_to_add = ["FinalReport"]
 
-# 🧠 Get full PQ entry (including code)
-pq = handler.get_pq_by_name("TransformSalesData")
-
-# 🪄 Insert PQ into active Excel
-handler.insert_pq_into_active_excel("TransformSalesData")
-
-# 💾 Export the index to JSON
-handler.export_index_to_json("pq_index.json")
+try:
+    manager.insert_into_excel(
+        names=queries_to_add,
+        workbook_name="Dashboard.xlsm"  # <-- So clean!
+    )
+    print("🚀 Queries sent! Go be a hero.")
+except Exception as e:
+    print(f"😬 Bruh, it failed: {e}")
 ```
 
 ---
 
-## 📁 Folder Structure Example
+## 📁 The Drip (File Structure)
+
+This is how you organize your repo. The app does the rest.
 
 ```
-MyPQFiles/
+My-Power-Query-Repo/
 │
-├── Sales_Transform.pq
-├── Merge_Customers.pq
-├── Region_Filter.pq
-└── index.csv  ← Generated automatically
+├── index.json          <-- The app makes this. Don't touch.
+│
+├── API/                <-- "API" Category
+│   ├── Get_API_Data.pq
+│   └── fn_Get_Credentials.pq
+│
+├── Helpers/            <-- "Helpers" Category
+│   ├── fn_Format_Date.pq
+│   └── fn_Safe_Divide.pq
+│
+└── Reports/            <-- "Reports" Category
+    └── Final_Sales_Report.pq
 ```
 
-Each `.pq` file may optionally contain **YAML frontmatter**:
+Each `.pq` file is just M-code with a **YAML "frontmatter"** block at the top. This is the metadata.
 
 ```yaml
 ---
-name: TransformSalesData
-category: Sales
-tags: [cleaning, merge, sales]
-description: Cleans and merges monthly sales data
-version: 1.2
+name: Final_Sales_Report
+category: Reports
+tags: [sales, final, public]
+dependencies:
+  - Get_API_Data
+  - fn_Format_Date
+description: The main query for the monthly sales dashboard.
+version: 1.5
 ---
-let
-    Source = Excel.CurrentWorkbook(){[Name="SalesData"]}[Content],
-    Clean = Table.TransformColumnTypes(Source,{{"Amount", type number}})
+
+(let
+    Source = Get_API_Data(),
+    #"Formatted Date" = fn_Format_Date(Source, "DateColumn")
 in
-    Clean
+    #"Formatted Date")
+
 ```
-
----
-
-## ⚙️ Key Features
-
-| Feature                      | Description                                              |
-| ---------------------------- | -------------------------------------------------------- |
-| 🧾 **YAML Metadata Parsing** | Reads and updates `.pq` frontmatter (name, tags, etc.)   |
-| 📊 **CSV Index Builder**     | Auto-builds and maintains a full PQ index (`index.csv`)  |
-| 🔍 **Search Engine**         | Keyword search across name, description, and tags        |
-| 🧠 **Metadata Updater**      | Modify YAML frontmatter fields dynamically               |
-| ✂️ **Clipboard Copier**      | Copy Power Query code directly to clipboard              |
-| 📤 **Excel Integration**     | Insert queries into Excel (active or specified workbook) |
-| ⚡ **Batch Insert**           | Add multiple queries to Excel in one go                  |
-| 🧱 **DataFrame Export**      | Get PQ index as a Pandas DataFrame                       |
-| ✅ **Validation Tools**       | Detect missing or invalid PQ paths                       |
-
----
-
-## 💻 Excel Integration Demo
-
-```python
-# Insert a PQ into specific workbook
-handler.insert_pq_into_excel(
-    file_path=r"C:\Reports\SalesReport.xlsx",
-    name="TransformSalesData"
-)
-
-# Insert multiple PQs at once
-handler.insert_pqs_batch(
-    names=["TransformSalesData", "Merge_Customers"],
-    file_path=r"C:\Reports\MonthlyDashboard.xlsx"
-)
-```
-
----
-
-## 🧾 Export and Analysis
-
-```python
-# Export index to JSON
-handler.export_index_to_json("pq_index.json")
-
-# Convert to DataFrame
-df = handler.index_to_dataframe()
-print(df.head())
-
-# Validate missing PQ paths
-missing = handler.validate_index()
-```
-
----
-
-## 🧩 Advanced Use: Metadata Update
-
-```python
-handler.update_pq_metadata("TransformSalesData", {
-    "version": "2.0",
-    "description": "Now includes quarterly adjustments"
-})
-```
-
----
-
-## 🧰 CLI-Style Usage (Example Workflow)
-
-```python
-# Step 1: Build your PQ index
-handler.build_index()
-
-# Step 2: Quickly search and copy to clipboard
-handler.copy_pq_function("Region_Filter")
-
-# Step 3: Paste directly into Power BI Advanced Editor 🚀
-```
-
----
-
-## 📘 Output Example (`index.csv`)
-
-| name               | category  | tags                  | description       | version | path                            |
-| ------------------ | --------- | --------------------- | ----------------- | ------- | ------------------------------- |
-| TransformSalesData | Sales     | ["merge", "cleaning"] | Cleans sales data | 1.2     | C:\MyPQFiles\Sales_Transform.pq |
-| Region_Filter      | Geography | ["filter", "region"]  | Filters by region | 1.0     | C:\MyPQFiles\Region_Filter.pq   |
-
----
-
-## 🧩 Typing Support
-
-✅ This package is **fully type-hinted** and includes a `py.typed` marker, enabling rich IDE autocompletion and static analysis via `mypy` or `pyright`.
 
 ---
 
 ## 📜 License
 
-This project is licensed under the **GNU-GPL 3.0 License** — free for personal and commercial use.
-Feel free to extend, fork, or integrate into your analytics stack!
+This project is licensed under the **GNU-GPL 3.0 License**. Go wild.
 
 ---
 
 ## 💚 Credits
 
-Created with 💚 by **Sudharshan TK**
+Made by **Sudharshan TK** (tks18)
 
-If you like this project, ⭐ Star it on [GitHub](https://github.com/tks18/xl-pq-handler)!
+If this tool just saved your workflow, give it a ⭐ **Star on [GitHub](https://github.com/tks18/xl-pq-handler)\!**
 
 ---
 
-> ⚡ *“Automate the boring Power Query stuff — one `.pq` at a time.”*
+> ⚡ _“Automate the boring Power Query stuff — one `.pq` at a time.”_
 
 ---

@@ -71,7 +71,8 @@ class PQManager:
                 if not safe_category:
                     safe_category = "Uncategorized"
 
-                target_dir = os.path.join(self.store.root, safe_category)
+                target_dir = os.path.join(
+                    self.store.root, "functions", safe_category)
                 target_path = os.path.join(target_dir, f"{safe_name}.pq")
 
                 script = PowerQueryScript(

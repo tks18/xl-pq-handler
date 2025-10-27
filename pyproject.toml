@@ -1,6 +1,6 @@
 [project]
 name = "xl-pq-handler"
-version = "2.0.3"
+version = "2.1.0"
 description = "A Pythonic Power Query (.pq) File Manager for Excel & Power BI Automation"
 readme = "README.md"
 authors = [
@@ -54,4 +54,4 @@ requires = ["uv_build>=0.8.15,<0.9.0"]
 build-backend = "uv_build"
 
 [project.scripts]
-shan-pq-magic = "xl_pq_handler.__main__:run"
+pqmagic = "xl_pq_handler.__main__:run"

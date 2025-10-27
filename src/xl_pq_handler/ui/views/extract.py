@@ -502,7 +502,7 @@ class ExtractView(ctk.CTkFrame):
                     safe_category = "Extracted"
 
                     target_dir = os.path.join(
-                        self.manager.store.root, safe_category)
+                        self.manager.store.root, "functions", safe_category)
                     out_path = os.path.join(target_dir, f"{safe_name}.pq")
 
                     # 2. Create Pydantic Models

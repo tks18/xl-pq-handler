@@ -128,7 +128,8 @@ class CreateView(ctk.CTkFrame):
                 safe_category = "Uncategorized"
 
             # Use the manager's root path
-            target_dir = os.path.join(self.manager.store.root, safe_category)
+            target_dir = os.path.join(
+                self.manager.store.root, "functions", safe_category)
             out_path = os.path.join(target_dir, f"{safe_name}.pq")
 
             # 2. Create Pydantic Models

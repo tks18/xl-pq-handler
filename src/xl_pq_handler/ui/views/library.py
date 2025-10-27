@@ -381,7 +381,7 @@ class LibraryView(ctk.CTkFrame):
                     ' ', '_', '-')).rstrip() or "Uncategorized"
 
                 new_path = os.path.join(
-                    self.manager.store.root, safe_category, f"{safe_name}.pq")
+                    self.manager.store.root, "functions", safe_category, f"{safe_name}.pq")
 
                 # 3. Create the new PowerQueryMetadata object
                 new_meta = PowerQueryMetadata(

@@ -23,6 +23,7 @@ class ExtractView(ctk.CTkFrame):
 
         self.excel_file_to_extract = ""
         self.extraction_vars = []  # For the confirmation dialog
+        self.open_workbook_names = []
 
         self._build_widgets()
 
@@ -45,19 +46,47 @@ class ExtractView(ctk.CTkFrame):
         top_panel.grid_columnconfigure(0, weight=1)
         top_panel.grid_columnconfigure(1, weight=1)
 
-        # --- Option 1: Active Workbook ---
-        self.extract_active_btn = ctk.CTkButton(
-            top_panel,
-            text="📥 Extract from Active Workbook",
-            height=50,
-            command=self._threaded_get_queries_active,
+        # --- Option 1: Open Workbook (NEW) ---
+        wb_frame = ctk.CTkFrame(top_panel, fg_color="transparent")
+        wb_frame.grid(row=0, column=0, columnspan=2,
+                      sticky="ew", padx=15, pady=15)
+        wb_frame.grid_columnconfigure(0, weight=1)
+
+        self.workbook_menu = ctk.CTkOptionMenu(
+            wb_frame,
+            values=["Click 'Refresh' to list..."],
+            fg_color=SoP["EDITOR"],
+            button_color=SoP["ACCENT_DARK"],
+            button_hover_color=SoP["ACCENT"],
+            text_color=SoP["TEXT_DIM"],
+            height=40
+        )
+        self.workbook_menu.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+
+        self.refresh_wbs_btn = ctk.CTkButton(
+            wb_frame,
+            text="🔄",
+            width=40,
+            height=40,
+            font=ctk.CTkFont(size=20),
+            command=self._refresh_workbook_list,
+            fg_color=SoP["TREE_FIELD"],
+            hover_color=SoP["ACCENT_HOVER"]
+        )
+        self.refresh_wbs_btn.grid(row=0, column=1, padx=5)
+
+        self.extract_from_wb_btn = ctk.CTkButton(
+            wb_frame,
+            text="📥 Extract from Selected",
+            height=40,
+            command=self._threaded_get_queries_from_workbook,
             fg_color=SoP["ACCENT"],
             hover_color=SoP["ACCENT_HOVER"],
             text_color="#000000",
             font=ctk.CTkFont(weight="bold")
         )
-        self.extract_active_btn.grid(
-            row=0, column=0, sticky="ew", padx=15, pady=15)
+        self.extract_from_wb_btn.grid(
+            row=1, column=0, columnspan=2, sticky="ew", pady=(10, 0))
 
         # --- Option 2: Select File ---
         self.extract_file_btn = ctk.CTkButton(
@@ -117,6 +146,25 @@ class ExtractView(ctk.CTkFrame):
         self.extract_log.tag_config("error", foreground="#FF5555")
 
     # --- Extract from Excel Handlers ---
+    def _refresh_workbook_list(self):
+        """Calls the manager to get open workbooks and updates the dropdown."""
+        try:
+            # <-- Gets list[str]
+            self.open_workbook_names = self.manager.excel.list_open_workbooks()
+
+            if not self.open_workbook_names:
+                self.workbook_menu.configure(
+                    values=["No workbooks open."], state="disabled")
+                self.workbook_menu.set("No workbooks open.")
+                self.extract_from_wb_btn.configure(state="disabled")
+            else:
+                self.workbook_menu.configure(
+                    values=self.open_workbook_names, state="normal")
+                self.workbook_menu.set(self.open_workbook_names[0])
+                self.extract_from_wb_btn.configure(state="normal")
+        except Exception as e:
+            messagebox.showerror(
+                "Error", f"Failed to list open workbooks:\n{e}")
 
     def _select_excel_file(self):
         path = filedialog.askopenfilename(
@@ -144,16 +192,24 @@ class ExtractView(ctk.CTkFrame):
             self.extract_log.configure(state="disabled")
         self.master.after(0, _task)
 
-    def _threaded_get_queries_active(self):
-        """Step 1: Get queries from active workbook."""
+    def _threaded_get_queries_from_workbook(self):
+        """Step 1: Get queries from the selected open workbook."""
+        selected_name = self.workbook_menu.get()
+
+        if not selected_name or selected_name == "No workbooks open.":
+            messagebox.showwarning(
+                "No Workbook", "Please select a valid workbook.")
+            return
+
         self._clear_log()
         self._append_log(
-            "Attempting to read from active Excel workbook...\n\n", "accent")
-        self.extract_active_btn.configure(state="disabled", text="Reading...")
+            f"Attempting to read from open workbook: {selected_name}...\n\n", "accent")
+        self.extract_from_wb_btn.configure(state="disabled", text="Reading...")
 
+        # We pass ONLY the string name to the new thread
         threading.Thread(
-            target=self._get_queries,
-            args=(None, "Active Workbook"),  # None means active
+            target=self._get_queries_open_wb_target,  # <-- New thread target
+            args=(selected_name,),
             daemon=True
         ).start()
 
@@ -170,14 +226,77 @@ class ExtractView(ctk.CTkFrame):
         self.extract_from_file_start_btn.configure(
             state="disabled", text="Reading...")
 
+        file_path = self.excel_file_to_extract
+        source_name = os.path.basename(file_path)
+
+        # We pass ONLY strings to the new thread
         threading.Thread(
-            target=self._get_queries,
-            args=(self.excel_file_to_extract, os.path.basename(
-                self.excel_file_to_extract)),
+            target=self._get_queries_file_target,  # <-- New thread target
+            args=(file_path, source_name),
             daemon=True
         ).start()
 
-    def _get_queries(self, file_path: str | None, source_name: str):
+    def _get_queries_open_wb_target(self, workbook_name: str):
+        """
+        THREAD TARGET: Gets queries from an open workbook.
+        Runs on a worker thread.
+        """
+        try:
+            # This acquires AND uses the COM object on the same thread
+            query_list = self.manager.excel.get_queries_from_open_workbook(
+                workbook_name)
+
+            if not query_list:
+                self._append_log(
+                    "No Power Queries found in the workbook.", "error")
+                messagebox.showinfo(
+                    "No Queries Found", f"No Power Queries were found in {workbook_name}.")
+                return
+
+            self._append_log(
+                f"Found {len(query_list)} queries. Opening confirmation dialog...", "accent")
+            self.master.after(0, lambda: self._open_extraction_confirmation_dialog(
+                query_list, workbook_name))
+
+        except Exception as e:
+            self._append_log(f"\n--- ERROR ---\n{e}\n", "error")
+            self.master.after(0, lambda: messagebox.showerror(
+                "Extraction Error", f"An error occurred:\n{e}"))
+        finally:
+            self.master.after(0, lambda: self.extract_from_wb_btn.configure(
+                state="normal", text="📥 Extract from Selected"))
+
+    def _get_queries_file_target(self, file_path: str, source_name: str):
+        """
+        THREAD TARGET: Gets queries from a closed file.
+        Runs on a worker thread.
+        """
+        try:
+            # This creates a new Excel instance on this thread
+            query_list = self.manager.excel.get_queries_from_workbook(
+                file_path=file_path)
+
+            if not query_list:
+                self._append_log(
+                    "No Power Queries found in the workbook.", "error")
+                messagebox.showinfo(
+                    "No Queries Found", f"No Power Queries were found in {source_name}.")
+                return
+
+            self._append_log(
+                f"Found {len(query_list)} queries. Opening confirmation dialog...", "accent")
+            self.master.after(0, lambda: self._open_extraction_confirmation_dialog(
+                query_list, source_name))
+
+        except Exception as e:
+            self._append_log(f"\n--- ERROR ---\n{e}\n", "error")
+            self.master.after(0, lambda: messagebox.showerror(
+                "Extraction Error", f"An error occurred:\n{e}"))
+        finally:
+            self.master.after(0, lambda: self.extract_from_file_start_btn.configure(
+                state="normal", text="Get Queries from File"))
+
+    def _get_queries(self, file_path: str | None, source_name: str, wb_api: Any | None):
         """
         Generic function to *get* queries using the new Excel service.
         `file_path` is None for active, or a string path.
@@ -186,7 +305,8 @@ class ExtractView(ctk.CTkFrame):
         try:
             # NEW API CALL:
             query_list = self.manager.excel.get_queries_from_workbook(
-                file_path)
+                file_path=file_path,
+                wb_api=wb_api)
 
             if not query_list:
                 self._append_log(
@@ -208,8 +328,8 @@ class ExtractView(ctk.CTkFrame):
         finally:
             # Re-enable buttons
             def _reset():
-                self.extract_active_btn.configure(
-                    state="normal", text="📥 Extract from Active Workbook")
+                self.extract_from_wb_btn.configure(
+                    state="normal", text="📥 Extract from Selected")
                 self.extract_from_file_start_btn.configure(
                     state="normal", text="Get Queries from File")
             self.master.after(0, _reset)

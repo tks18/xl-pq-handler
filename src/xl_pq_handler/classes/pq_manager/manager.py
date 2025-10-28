@@ -1,6 +1,6 @@
 # manager.py
 import os
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import subprocess
 import sys
 
@@ -8,6 +8,7 @@ from .models import PowerQueryMetadata, PowerQueryScript
 from .storage import PQFileStore
 from .excel_service import ExcelQueryService
 from .dependencies import DependencyResolver
+from .parser import ExcelMCodeParser
 from .utils import get_logger
 
 logger = get_logger(__name__)
@@ -25,6 +26,7 @@ class PQManager:
         self.store = PQFileStore(root=root)
         self.excel = ExcelQueryService()
         self.resolver = DependencyResolver(self.store)
+        self.parser = ExcelMCodeParser()
 
     def build_index(self) -> None:
         """Rebuilds the entire .pq file index."""
@@ -221,3 +223,19 @@ class PQManager:
         # 5. Rebuild index to make all changes live
         self.build_index()
         logger.info(f"Successfully updated '{old_name}' to '{new_meta.name}'.")
+
+    def get_tokens_from_code(self, body: str) -> List[Tuple[str, str]]:
+        """Analyzes M-code and returns a list of (token, type) tuples."""
+        return self.parser.get_tokens(body)
+
+    def get_dependencies_from_code(self, body: str) -> List[str]:
+        """Parses M-code to find potential dependencies (function calls)."""
+        return self.parser.find_dependencies(body)
+
+    def get_parameters_from_code(self, body: str) -> List[Dict[str, Any]]:
+        """Parses M-code to find its function parameters."""
+        return self.parser.find_parameters(body)
+
+    def get_datasources_from_code(self, body: str) -> List[Dict[str, Any]]:
+        """Parses M-code to find data source function calls."""
+        return self.parser.find_data_sources(body)

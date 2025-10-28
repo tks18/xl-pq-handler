@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.2.0](https://github.com/tks18/xl-pq-handler/compare/v2.1.1...v2.2.0) (2025-10-28)
+
+
+### Features 🔥
+
+* **api:** introducing a regex based m code parser ([9e0a1e4](https://github.com/tks18/xl-pq-handler/commit/9e0a1e4b5fd7fef59ed8b7f927d2779ffb434f01))
+* **api:** update the manager to expose the functions to use the parser ([925bd36](https://github.com/tks18/xl-pq-handler/commit/925bd36e4999522de13733460d40d359ea725483))
+* **ui:** update views - library, extract & create to use the new component for rendering preview ([19c2234](https://github.com/tks18/xl-pq-handler/commit/19c223462daea426c3501b75ee2ad8040486c3d8))
+* **ui:** write a new component - codeview to enhance textbox widget ([962596a](https://github.com/tks18/xl-pq-handler/commit/962596a268e3a69abd8e73db99809c18ee662d9b))
+
+
+### Others 🔧
+
+* update pyproject.toml version ([c28ad60](https://github.com/tks18/xl-pq-handler/commit/c28ad60b2f72c36f34117381e1d703c1d4feaae2))
+
 ### [2.1.1](https://github.com/tks18/xl-pq-handler/compare/v2.1.0...v2.1.1) (2025-10-27)
 
 

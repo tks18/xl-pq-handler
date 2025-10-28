@@ -11,5 +11,6 @@ SoP = {
     "ACCENT_DARK": "#4a468c",  # Darker purple for headers
     "TEXT": "#e0d9ef",       # Main text
     "TEXT_DIM": "#88849b",   # Dimmed text
-    "TREE_FIELD": "#343261"  # Treeview row background
+    "TEXT_SUPER_DIM": "#535353",
+    "TREE_FIELD": "#343261"  # Treeview row background,
 }

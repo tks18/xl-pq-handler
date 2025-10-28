@@ -9,6 +9,7 @@ import pandas as pd
 
 from ...classes import PQManager, PowerQueryScript, PowerQueryMetadata
 from ..theme import SoP
+from ..components.codeview import CTkCodeView
 
 
 class LibraryView(ctk.CTkFrame):
@@ -137,7 +138,9 @@ class LibraryView(ctk.CTkFrame):
         )
         self.bottom_tabview.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
         self.bottom_tabview.add("Description")
+        self.bottom_tabview.add("Parameters")
         self.bottom_tabview.add("Dependencies")
+        self.bottom_tabview.add("Data Sources")
         self.bottom_tabview.add("Graph")
         self.bottom_tabview.add("Preview")
 
@@ -145,11 +148,32 @@ class LibraryView(ctk.CTkFrame):
             "Description"), fg_color="transparent", text_color=SoP["TEXT_DIM"])
         self.desc.pack(fill="both", expand=True, padx=5, pady=5)
         self.desc.configure(state="disabled")
+        self.desc.tag_config("dim", foreground=SoP["TEXT_DIM"])
+
+        self.params_view = ctk.CTkTextbox(self.bottom_tabview.tab(
+            "Parameters"), fg_color="transparent", text_color=SoP["TEXT"],
+            font=("Consolas", 12))
+        self.params_view.pack(fill="both", expand=True, padx=5, pady=5)
+        self.params_view.configure(state="disabled")
+        self.params_view.tag_config("dim", foreground=SoP["TEXT_DIM"])
+        self.params_view.tag_config("name", foreground=SoP["ACCENT_HOVER"])
+        self.params_view.tag_config("type", foreground="#ce9178")  # Orange
 
         self.deps = ctk.CTkTextbox(self.bottom_tabview.tab(
             "Dependencies"), fg_color="transparent", text_color=SoP["TEXT_DIM"])
         self.deps.pack(fill="both", expand=True, padx=5, pady=5)
         self.deps.configure(state="disabled")
+        self.deps.tag_config("dim", foreground=SoP["TEXT_DIM"])
+
+        self.sources_view = ctk.CTkTextbox(self.bottom_tabview.tab(
+            "Data Sources"), fg_color="transparent", text_color=SoP["TEXT"],
+            font=("Consolas", 12))
+        self.sources_view.pack(fill="both", expand=True, padx=5, pady=5)
+        self.sources_view.configure(state="disabled")
+        self.sources_view.tag_config("dim", foreground=SoP["TEXT_DIM"])
+        self.sources_view.tag_config(
+            "type", foreground=SoP["ACCENT_HOVER"])
+        self.sources_view.tag_config("source", foreground="#ce9178")
 
         self.graph_view = ctk.CTkTextbox(self.bottom_tabview.tab(
             "Graph"), fg_color="transparent", text_color=SoP["TEXT"],
@@ -157,14 +181,13 @@ class LibraryView(ctk.CTkFrame):
         self.graph_view.pack(fill="both", expand=True, padx=5, pady=5)
         self.graph_view.configure(state="disabled")
         self.graph_view.tag_config("dim", foreground=SoP["TEXT_DIM"])
+        self.graph_view.tag_config("dim", foreground=SoP["TEXT_DIM"])
 
-        self.preview = ctk.CTkTextbox(
+        self.preview = CTkCodeView(
             self.bottom_tabview.tab("Preview"),
-            fg_color="transparent",
-            text_color=SoP["TEXT"],
-            font=("Consolas", 12)  # Monospaced font
+            manager=self.manager
         )
-        self.preview.pack(fill="both", expand=True, padx=5, pady=5)
+        self.preview.pack(fill="both", expand=True, padx=0, pady=0)
         self.preview.configure(state="disabled")
 
         self.desc.tag_config("dim", foreground=SoP["TEXT_DIM"])
@@ -342,7 +365,22 @@ class LibraryView(ctk.CTkFrame):
         entry_category = create_form_row(form_frame, "Category", 1)
         entry_version = create_form_row(form_frame, "Version", 2)
         entry_tags = create_form_row(form_frame, "Tags (csv)", 3)
-        entry_deps = create_form_row(form_frame, "Dependencies (csv)", 4)
+
+        ctk.CTkLabel(form_frame, text="Dependencies (csv)", text_color=SoP["TEXT_DIM"]).grid(
+            row=4, column=0, sticky="w", padx=10, pady=8)
+        dep_frame = ctk.CTkFrame(form_frame, fg_color="transparent")
+        dep_frame.grid(row=4, column=1, sticky="ew")
+        dep_frame.grid_columnconfigure(0, weight=1)
+        entry_deps = ctk.CTkEntry(
+            dep_frame, border_color=SoP["TREE_FIELD"],
+            fg_color=SoP["EDITOR"], text_color=SoP["TEXT"])
+        entry_deps.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        auto_detect_btn = ctk.CTkButton(
+            dep_frame, text="Auto-Detect", width=100,
+            fg_color=SoP["TREE_FIELD"], hover_color=SoP["ACCENT_DARK"],
+            command=lambda: _auto_detect_deps()  # <-- New command
+        )
+        auto_detect_btn.grid(row=0, column=1, sticky="e")
 
         ctk.CTkLabel(form_frame, text="Description", text_color=SoP["TEXT_DIM"]).grid(
             row=5, column=0, sticky="w", padx=10, pady=8)
@@ -351,12 +389,13 @@ class LibraryView(ctk.CTkFrame):
             fg_color=SoP["EDITOR"], text_color=SoP["TEXT"])
         text_desc.grid(row=5, column=1, sticky="ew", padx=10, pady=8)
 
-        ctk.CTkLabel(form_frame, text="Query Body (Read-Only)", text_color=SoP["TEXT_DIM"]).grid(
-            row=6, column=0, sticky="nw", padx=10, pady=8)
-        text_body = ctk.CTkTextbox(
-            form_frame, height=200, border_color=SoP["TREE_FIELD"],
-            fg_color=SoP["EDITOR"], text_color=SoP["TEXT_DIM"], font=("Consolas", 12))
-        text_body.grid(row=6, column=1, sticky="ew", padx=10, pady=8)
+        text_body = CTkCodeView(
+            form_frame,
+            manager=self.manager,  # <-- Pass manager
+            height=200
+        )
+        text_body.grid(row=6, column=1, sticky="nsew", padx=10, pady=8)
+        text_body.set_code(script.body)
 
         # --- Pre-fill the form ---
         entry_name.insert(0, script.meta.name)
@@ -367,6 +406,24 @@ class LibraryView(ctk.CTkFrame):
         text_desc.insert("1.0", script.meta.description)
         text_body.insert("1.0", script.body)
         text_body.configure(state="disabled")  # Make body read-only
+
+        def _auto_detect_deps():
+            try:
+                body = text_body.get("1.0", "end")
+                # Call our new manager method!
+                deps_list = self.manager.get_dependencies_from_code(body)
+
+                if not deps_list:
+                    messagebox.showinfo(
+                        "Auto-Detect", "No dependencies found.", parent=dialog)
+                    return
+
+                entry_deps.delete(0, "end")
+                entry_deps.insert(0, ", ".join(deps_list))
+
+            except Exception as e:
+                messagebox.showerror(
+                    "Parse Error", f"Failed to parse code:\n{e}", parent=dialog)
 
         def on_save():
             try:
@@ -610,19 +667,48 @@ class LibraryView(ctk.CTkFrame):
         self.desc.configure(state="disabled")
 
         # --- Update Dependencies/Preview (single selection only) ---
+        self.params_view.configure(state="normal")
+        self.params_view.delete("1.0", "end")
         self.deps.configure(state="normal")
         self.deps.delete("1.0", "end")
         self.preview.configure(state="normal")
         self.preview.delete("1.0", "end")
         self.graph_view.configure(state="normal")
         self.graph_view.delete("1.0", "end")
+        self.sources_view.configure(state="normal")
+        self.sources_view.delete("1.0", "end")
 
         if len(sels) == 1:
             name = self.tree.item(sels[0], "values")[0]
-            # NEW API CALL: Get the full script object
             script = self.manager.get_script(name)
 
             if script:
+                try:
+                    params = self.manager.get_parameters_from_code(script.body)
+                    if not params:
+                        self.params_view.insert(
+                            "1.0", "This query is not a function.", ("dim",))
+                    else:
+                        for p in params:
+                            self.params_view.insert(
+                                "end", f"Name:     ", ("dim",))
+                            self.params_view.insert(
+                                "end", f"{p['name']}\n", ("name",))
+
+                            self.params_view.insert(
+                                "end", f"Type:     ", ("dim",))
+                            self.params_view.insert(
+                                "end", f"{p['type']}\n", ("type",))
+
+                            self.params_view.insert(
+                                "end", f"Optional: ", ("dim",))
+                            self.params_view.insert(
+                                "end", f"{'Yes' if p['optional'] else 'No'}\n\n", ("name",))
+
+                except Exception as e:
+                    self.params_view.insert(
+                        "1.0", f"Could not parse parameters: {e}", ("dim",))
+
                 # Update Dependencies
                 deps_list = script.meta.dependencies
                 if deps_list:
@@ -634,7 +720,40 @@ class LibraryView(ctk.CTkFrame):
                         "1.0", f"{name} has no dependencies.", ("dim",))
 
                 # Update Preview
-                self.preview.insert("1.0", script.body)
+                self.preview.set_code(script.body)
+
+                try:
+                    sources = self.manager.get_datasources_from_code(
+                        script.body)
+                    if not sources:
+                        self.sources_view.insert(
+                            "1.0", "No external data sources found.", ("dim",))
+                    else:
+                        for src in sources:
+                            self.sources_view.insert(
+                                "end", f"Type:   ", ("dim",))
+                            self.sources_view.insert(
+                                "end", f"{src['type']}\n", ("type",))
+
+                            # This is the full first argument
+                            self.sources_view.insert(
+                                "end", f"Source: ", ("dim",))
+                            self.sources_view.insert(
+                                "end", f"{src['full_argument']}", ("source",))
+
+                            # Add the (Input Parameter) tag if needed
+                            if src["source_type"] == "Variable":
+                                self.sources_view.insert(
+                                    "end", f" (Input Parameter)\n\n", ("dim",))
+                            elif src["source_type"] == "Literal":
+                                self.sources_view.insert(
+                                    "end", f" (Literal)\n\n", ("dim",))
+                            else:
+                                self.sources_view.insert("end", f"\n\n")
+
+                except Exception as e:
+                    self.sources_view.insert(
+                        "1.0", f"Could not parse sources: {e}", ("dim",))
 
                 try:
                     tree_data = self.manager.resolver.get_dependency_tree(name)
@@ -644,30 +763,42 @@ class LibraryView(ctk.CTkFrame):
                     self.graph_view.insert(
                         "1.0", f"Could not build graph: {e}", ("dim",))
             else:
+                self.params_view.insert("1.0", "Query not found.", ("dim",))
                 self.deps.insert(
                     "1.0", "Could not find query in index.", ("dim",))
                 self.preview.insert(
                     "1.0", f"Error: Could not find or read file for {name}.", ("dim",))
+                self.sources_view.insert("1.0", "Query not found.", ("dim",))
                 self.graph_view.insert("1.0", "Query not found.", ("dim",))
 
         elif len(sels) > 1:
+            self.params_view.insert(
+                "1.0", "Select a single query to view parameters.", ("dim",))
             self.deps.insert(
                 "1.0", "Select a single query to view dependencies.", ("dim",))
             self.preview.insert(
                 "1.0", "Select a single query to preview its M code.", ("dim",))
+            self.sources_view.insert(
+                "1.0", "Select a single query to view data sources.", ("dim",))
             self.graph_view.insert(
                 "1.0", "Select a single query to view its dependency graph.", ("dim",))
         else:
+            self.params_view.insert(
+                "1.0", "Select a query to view parameters.", ("dim",))
             self.deps.insert(
                 "1.0", "Select a query to view its dependencies.", ("dim",))
             self.preview.insert(
                 "1.0", "Select a query to preview its M code.", ("dim",))
             self.graph_view.insert(
                 "1.0", "Select a query to view its dependency graph.", ("dim",))
+            self.sources_view.insert(
+                "1.0", "Select a query to view data sources.", ("dim",))
 
+        self.params_view.configure(state="disabled")
         self.deps.configure(state="disabled")
         self.preview.configure(state="disabled")
         self.graph_view.configure(state="disabled")
+        self.sources_view.configure(state="disabled")
 
     def clear_selection(self):
         for sel in self.tree.selection():

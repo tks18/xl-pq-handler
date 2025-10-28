@@ -6,10 +6,10 @@ import threading
 import os
 from typing import Callable
 
-from ...classes.pq_manager import PQManager
-from ...classes.pq_manager.models import PowerQueryScript, PowerQueryMetadata
-from ..theme import SoP
-from ..components.codeview import CTkCodeView
+from ....classes.pq_manager import PQManager
+from ....classes.pq_manager.models import PowerQueryScript, PowerQueryMetadata
+from ...theme import SoP
+from ...components.codeview import CTkCodeView
 
 
 class CreateView(ctk.CTkFrame):
@@ -33,7 +33,7 @@ class CreateView(ctk.CTkFrame):
 
         title = ctk.CTkLabel(
             self, text="Create New Power Query",
-            font=ctk.CTkFont(size=24, weight="bold"), text_color=SoP["ACCENT_HOVER"])
+            font=ctk.CTkFont(size=20, weight="bold"), text_color=SoP["ACCENT_HOVER"])
         title.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 20))
 
         form_frame = ctk.CTkScrollableFrame(

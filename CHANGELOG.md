@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.3.0](https://github.com/tks18/xl-pq-handler/compare/v2.2.0...v2.3.0) (2025-10-28)
+
+
+### Bug Fixes 🛠
+
+* **components/codeviewer:** remove line numbers as rendering in tkinter is gimmicky ([836d1c6](https://github.com/tks18/xl-pq-handler/commit/836d1c64b697a4fd5ca65ec0c48caf2184333cb0))
+
+
+### Features 🔥
+
+* **ui/views:** write a component to ui/library to refactor the treeview part ([1fe49fc](https://github.com/tks18/xl-pq-handler/commit/1fe49fc54542cf85d3f432deb8b4340580f08721))
+* **ui/views:** write a new component for ui/extract to refactor file extraction part ([b34341e](https://github.com/tks18/xl-pq-handler/commit/b34341ec243159a7184d27e3b3b59a1021213334))
+* **ui/views:** write a new component for ui/extract to refactor log viewer part ([c5050e7](https://github.com/tks18/xl-pq-handler/commit/c5050e7ff2ff398321dc8117d2e8ffa39c52b603))
+* **ui/views:** write a new component for ui/extract to refactor workbook extraction part ([d0bd020](https://github.com/tks18/xl-pq-handler/commit/d0bd02002078b692b428f5dfb82f34047192cace))
+* **ui/views:** write a new component for ui/library for refactoring top bar part ([eb9cce9](https://github.com/tks18/xl-pq-handler/commit/eb9cce93865b5e743559ad91309d247a7316f6b2))
+* **ui/views:** write a new component to refactor bottom panel ([6a69c84](https://github.com/tks18/xl-pq-handler/commit/6a69c840b2643cb6102748e6c0efaff8e179c77d))
+* **ui/views:** write the edit dialog as a seperate component to refactor ([956cf34](https://github.com/tks18/xl-pq-handler/commit/956cf34a69c396dd48d8ae8c70e51edc805dbf6c))
+
+
+### Code Refactoring 🖌
+
+* **ui/views:** refactor the create view to a particular folder for better management ([9f81259](https://github.com/tks18/xl-pq-handler/commit/9f81259fe5cd5aead1a0ac3137bc5ffffc6cfc36))
+* **ui/views:** refactor the ui/extract completely to use the new components ([5e88106](https://github.com/tks18/xl-pq-handler/commit/5e8810663074999d6f557fbb66283bea1b72c984))
+* **ui/views:** refactor the ui/library completely to use the new components ([e1b2e1d](https://github.com/tks18/xl-pq-handler/commit/e1b2e1d6f98b3e6cfed74cce7bb0fccf180df3db))
+* **ui/views:** remove the extract.py file as it is refactored ([b1ad98f](https://github.com/tks18/xl-pq-handler/commit/b1ad98fcd2f07defad81e935b1a1b200096ccc52))
+
+
+### Others 🔧
+
+* update version ([3a1e5ff](https://github.com/tks18/xl-pq-handler/commit/3a1e5ff752221f3edf70612db15d2b80aeb4350f))
+
 ## [2.2.0](https://github.com/tks18/xl-pq-handler/compare/v2.1.1...v2.2.0) (2025-10-28)
 
 

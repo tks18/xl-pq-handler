@@ -9,6 +9,7 @@ from typing import List, Dict, Any, Callable
 from ...classes.pq_manager import PQManager
 from ...classes.pq_manager.models import PowerQueryScript, PowerQueryMetadata
 from ..theme import SoP
+from ..components.codeview import CTkCodeView
 
 
 class ExtractView(ctk.CTkFrame):
@@ -335,107 +336,239 @@ class ExtractView(ctk.CTkFrame):
             self.master.after(0, _reset)
 
     # --- Extraction Confirmation Dialog ---
+    def _clear_all_tabs(self, tabs: Dict[str, ctk.CTkTextbox]):
+        """Clears all textboxes in the tab view."""
+        for name, box in tabs.items():
+            box.configure(state="normal")
+            box.delete("1.0", "end")
+            if name == "preview":
+                box.insert(
+                    "1.0", "Select a query name to preview its M-code.", ("dim",))
+            elif name == "params":
+                box.insert(
+                    "1.0", "Select a query name to view its parameters.", ("dim",))
+            elif name == "sources":
+                box.insert(
+                    "1.0", "Select a query name to view its data sources.", ("dim",))
+            box.configure(state="disabled")
 
     def _open_extraction_confirmation_dialog(self, query_list: List[Dict[str, Any]], source_name: str):
-        """Shows a new window to let the user pick which queries to import."""
+        """
+        Shows a new, ADVANCED dialog to let the user preview
+        and select which queries to import.
+        """
+        self.extraction_vars = []  # Clear previous vars
 
         dialog = ctk.CTkToplevel(self)
-        dialog.title("Confirm Queries to Import")
-        dialog.geometry("700x600")
+        dialog.title(f"Extract Queries from {source_name}")
+        dialog.geometry("1100x750")  # Make it bigger
         dialog.transient()
         dialog.grab_set()
         dialog.configure(fg_color=SoP["BG"])
-        dialog.grid_columnconfigure(0, weight=1)
-        dialog.grid_rowconfigure(2, weight=1)
-
-        self.extraction_vars = []  # Clear previous vars
+        dialog.grid_columnconfigure(1, weight=3)  # Right panel (preview)
+        dialog.grid_columnconfigure(0, weight=1)  # Left panel (list)
+        dialog.grid_rowconfigure(1, weight=1)
 
         title_label = ctk.CTkLabel(
             dialog,
-            text=f"Found {len(query_list)} queries in {source_name}",
+            text=f"Found {len(query_list)} queries. Select queries to import.",
             font=ctk.CTkFont(size=16, weight="bold"),
             text_color=SoP["ACCENT_HOVER"]
         )
-        title_label.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="w")
+        title_label.grid(row=0, column=0, columnspan=2,
+                         padx=20, pady=(20, 10), sticky="w")
 
-        # ... (Rest of dialog layout is identical to your original code) ...
-        # --- Search bar for the dialog ---
-        search_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        search_frame.grid(row=1, column=0, sticky="ew", padx=15)
-        search_frame.grid_columnconfigure(0, weight=1)
+        # --- Left Panel: Query List ---
+        left_panel = ctk.CTkFrame(dialog, fg_color=SoP["FRAME"])
+        left_panel.grid(row=1, column=0, sticky="nsew", padx=(15, 10), pady=10)
+        left_panel.grid_columnconfigure(0, weight=1)
+        left_panel.grid_rowconfigure(1, weight=1)
 
+        # Search/Filter Bar
         dialog_search_var = tk.StringVar()
         dialog_search_entry = ctk.CTkEntry(
-            search_frame,
+            left_panel,
             textvariable=dialog_search_var,
             placeholder_text="Filter queries...",
-            fg_color=SoP["TREE_FIELD"],
-            border_color=SoP["FRAME"],
-            text_color=SoP["TEXT"],
-            height=35
+            fg_color=SoP["EDITOR"], border_color=SoP["TREE_FIELD"],
+            text_color=SoP["TEXT"], height=35
         )
-        dialog_search_entry.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        dialog_search_entry.grid(
+            row=0, column=0, sticky="ew", padx=10, pady=10)
 
-        # --- Checkbox list ---
+        # Scrollable list for checkboxes
         scroll_frame = ctk.CTkScrollableFrame(
-            dialog, fg_color=SoP["FRAME"], corner_radius=8
+            left_panel, fg_color="transparent", corner_radius=8
         )
-        scroll_frame.grid(row=2, column=0, sticky="nsew", padx=15, pady=10)
-        scroll_frame.grid_columnconfigure(0, weight=1)
+        scroll_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=(0, 10))
+        scroll_frame.grid_columnconfigure(1, weight=1)
 
-        # Function to filter checkboxes
-        def filter_queries(*args):
-            query = dialog_search_var.get().lower()
-            for var_tuple in self.extraction_vars:
-                cb, _, label, query_dict = var_tuple
-                name = query_dict.get("name", "").lower()
-                desc = query_dict.get("description", "").lower()
+        # --- Right Panel: TabView for Previews ---
+        right_panel = ctk.CTkTabview(
+            dialog,
+            fg_color=SoP["FRAME"],
+            segmented_button_fg_color=SoP["EDITOR"],
+            segmented_button_selected_color=SoP["ACCENT_DARK"],
+            segmented_button_selected_hover_color=SoP["ACCENT_DARK"],
+            segmented_button_unselected_color=SoP["EDITOR"],
+            segmented_button_unselected_hover_color=SoP["TREE_FIELD"],
+            text_color=SoP["TEXT_DIM"],
+            border_width=1,
+            border_color=SoP["FRAME"]
+        )
+        right_panel.grid(row=1, column=1, sticky="nsew", padx=(0, 15), pady=10)
 
-                if query in name or query in desc:
-                    cb.grid()
-                    label.grid()
-                else:
-                    cb.grid_remove()
-                    label.grid_remove()
+        tab_preview = CTkCodeView(
+            right_panel.add("Preview"),
+            manager=self.manager
+        )
+        tab_params = ctk.CTkTextbox(right_panel.add(
+            "Parameters"), fg_color="transparent",  font=("Consolas", 12))
+        tab_sources = ctk.CTkTextbox(right_panel.add(
+            "Data Sources"), fg_color="transparent", font=("Consolas", 12))
 
-        dialog_search_var.trace_add("write", filter_queries)
+        tab_widgets = {"preview": tab_preview,
+                       "params": tab_params, "sources": tab_sources}
+        for name, box in tab_widgets.items():
+            box.pack(fill="both", expand=True)
+            if name == "preview":
+                pass  # CTkCodeView handles its tags
+            else:
+                # Configure the standard CTkTextboxes
+                box.tag_config("dim", foreground=SoP["TEXT_DIM"])
+                if name == "params":
+                    box.tag_config("name", foreground=SoP["ACCENT_HOVER"])
+                    box.tag_config("type", foreground="#ce9178")  # Orange
+                elif name == "sources":
+                    # Mauve (like code)
+                    box.tag_config("type", foreground="#c586c0")
+                    box.tag_config("source", foreground="#ce9178")  # Orange
+
+        tab_widgets = {"preview": tab_preview,
+                       "params": tab_params, "sources": tab_sources}
+        for box in tab_widgets.values():
+            box.pack(fill="both", expand=True)
+
+        def clear_tabs():
+            for name, box in tab_widgets.items():
+                box.configure(state="normal")
+                box.delete("1.0", "end")
+                # Insert placeholder text
+                if name == "preview":
+                    box.insert("1.0", "Select query name...", ("dim",))
+                elif name == "params":
+                    box.insert("1.0", "Select query name...", ("dim",))
+                elif name == "sources":
+                    box.insert("1.0", "Select query name...", ("dim",))
+                box.configure(state="disabled")
+
+        clear_tabs()
+
+        # --- Helper function to update the preview panel ---
+        def update_preview_panel(query_dict: Dict[str, Any]):
+            body = query_dict.get("formula", "")
+
+            # 1. Update Preview Tab
+            tab_preview.set_code(body)
+
+            # 2. Update Parameters Tab
+            params = self.manager.get_parameters_from_code(body)
+            tab_params.configure(state="normal")
+            tab_params.delete("1.0", "end")
+            if not params:
+                tab_params.insert(
+                    "1.0", "This query is not a function.", ("dim",))
+            else:
+                for p in params:
+                    tab_params.insert("end", f"Name:     ", ("dim",))
+                    tab_params.insert("end", f"{p['name']}\n", ("name",))
+                    tab_params.insert("end", f"Type:     ", ("dim",))
+                    tab_params.insert("end", f"{p['type']}\n", ("type",))
+                    tab_params.insert("end", f"Optional: ", ("dim",))
+                    tab_params.insert(
+                        "end", f"{'Yes' if p['optional'] else 'No'}\n\n", ("name",))
+            tab_params.configure(state="disabled")
+
+            # 3. Update Data Sources Tab
+            sources = self.manager.get_datasources_from_code(body)
+            tab_sources.configure(state="normal")
+            tab_sources.delete("1.0", "end")
+            if not sources:
+                tab_sources.insert(
+                    "1.0", "No external data sources found.", ("dim",))
+            else:
+                for src in sources:
+                    tab_sources.insert("end", f"Type:   ", ("dim",))
+                    tab_sources.insert("end", f"{src['type']}\n", ("type",))
+                    tab_sources.insert("end", f"Source: ", ("dim",))
+                    tab_sources.insert(
+                        "end", f"{src['full_argument']}", ("source",))
+                    tab_sources.insert(
+                        "end", f" (Input Parameter)\n\n" if src["source_type"] == "Variable" else "\n\n")
+            tab_sources.configure(state="disabled")
+
+        # --- Populate the Checkbox List ---
+
+        # This will hold (checkbox, button, query_dict)
+        query_widgets = []
 
         for i, query in enumerate(query_list):
             var = tk.BooleanVar(value=True)
             name = str(query.get("name"))
-            desc = (query.get("description")
-                    or "No description.")[:100] + "..."
+
+            # Create a frame for each row
+            row_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
+            row_frame.grid(row=i, column=0, sticky="ew")
+            row_frame.grid_columnconfigure(1, weight=1)
 
             cb = ctk.CTkCheckBox(
-                scroll_frame,
+                row_frame, text="", variable=var,
+                fg_color=SoP["ACCENT"], hover_color=SoP["ACCENT_HOVER"],
+                width=30
+            )
+            cb.grid(row=0, column=0, padx=5, pady=(5, 0))
+
+            # THIS BUTTON is for PREVIEW
+            name_btn = ctk.CTkButton(
+                row_frame,
                 text=name,
-                variable=var,
-                fg_color=SoP["ACCENT"],
-                hover_color=SoP["ACCENT_HOVER"],
-                text_color=SoP["TEXT"]
+                fg_color="transparent",
+                text_color=SoP["TEXT"],
+                hover_color=SoP["EDITOR"],
+                anchor="w",
+                command=lambda q=query: update_preview_panel(q)
             )
-            cb.grid(row=i*2, column=0, sticky="w", padx=10, pady=(10, 0))
+            name_btn.grid(row=0, column=1, sticky="ew", pady=(5, 0))
 
-            label = ctk.CTkLabel(
-                scroll_frame,
-                text=f"   {desc}",
-                text_color=SoP["TEXT_DIM"]
-            )
-            label.grid(row=i*2 + 1, column=0, sticky="w", padx=20, pady=(0, 5))
+            # Store everything for filtering and importing
+            self.extraction_vars.append((var, query))
+            query_widgets.append((row_frame, name.lower(), query))
 
-            # Store widgets for filtering
-            self.extraction_vars.append((cb, var, label, query))
+        # --- Search/Filter Function ---
+        def filter_queries(*args):
+            query = dialog_search_var.get().lower()
+            for row_frame, name, query_dict in query_widgets:
+                if query in name:
+                    row_frame.grid()
+                else:
+                    row_frame.grid_remove()
 
-        # --- Action Buttons ---
+        dialog_search_var.trace_add("write", filter_queries)
+
+        # --- Action Buttons (Bottom) ---
         btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        btn_frame.grid(row=3, column=0, sticky="ew", padx=15, pady=10)
+        btn_frame.grid(row=2, column=0, columnspan=2,
+                       sticky="ew", padx=15, pady=10)
         btn_frame.grid_columnconfigure(3, weight=1)
 
         def select_all(val):
-            for var_tuple in self.extraction_vars:
-                cb, var, label, _ = var_tuple
-                if cb.winfo_viewable():  # Only affect visible items
-                    var.set(val)
+            for row_frame, name, query in query_widgets:
+                if row_frame.winfo_viewable():  # Only affect visible items
+                    # Find the var for this query
+                    for var, q in self.extraction_vars:
+                        if q['name'] == query['name']:
+                            var.set(val)
+                            break
 
         ctk.CTkButton(
             btn_frame, text="Select All Visible", fg_color=SoP["FRAME"], text_color=SoP["TEXT_DIM"],
@@ -457,16 +590,17 @@ class ExtractView(ctk.CTkFrame):
 
         # Update button text on selection change
         def update_btn_text(*args):
-            count = sum(
-                1 for _, var, _, _ in self.extraction_vars if var.get())
+            count = sum(1 for var, q in self.extraction_vars if var.get())
             import_btn.configure(text=f"Import {count} Queries")
 
-        for _, var, _, _ in self.extraction_vars:
+        for var, q in self.extraction_vars:
             var.trace_add("write", update_btn_text)
 
     def _threaded_confirm_extraction(self, dialog: ctk.CTkToplevel):
         """Step 2: Gathers selected queries and passes them to the writer thread."""
-        selected_queries = [query for _, var, _,
+
+        # This logic is now cleaner, just reads the list
+        selected_queries = [query for var,
                             query in self.extraction_vars if var.get()]
 
         if not selected_queries:

@@ -9,6 +9,7 @@ from typing import Callable
 from ...classes.pq_manager import PQManager
 from ...classes.pq_manager.models import PowerQueryScript, PowerQueryMetadata
 from ..theme import SoP
+from ..components.codeview import CTkCodeView
 
 
 class CreateView(ctk.CTkFrame):
@@ -66,11 +67,39 @@ class CreateView(ctk.CTkFrame):
 
         ctk.CTkLabel(form_frame, text="Query Body*", text_color=SoP["TEXT_DIM"]).grid(
             row=6, column=0, sticky="nw", padx=10, pady=8)
+        self.body_tabview = ctk.CTkTabview(
+            form_frame, height=250,
+            fg_color=SoP["EDITOR"],
+            border_color=SoP["TREE_FIELD"],
+            border_width=1,
+            segmented_button_fg_color=SoP["EDITOR"],
+            segmented_button_selected_color=SoP["ACCENT_DARK"],
+            segmented_button_selected_hover_color=SoP["ACCENT_DARK"],
+            segmented_button_unselected_color=SoP["EDITOR"],
+            segmented_button_unselected_hover_color=SoP["TREE_FIELD"],
+        )
+        self.body_tabview.grid(row=6, column=1, sticky="ew", padx=10, pady=8)
+        self.body_tabview.add("Write")
+        self.body_tabview.add("Preview")
+        self.body_tabview.tab("Preview").grid_columnconfigure(0, weight=1)
+        self.body_tabview.tab("Preview").grid_rowconfigure(0, weight=1)
+
         self.create_text_body = ctk.CTkTextbox(
-            form_frame, height=250, border_color=SoP["TREE_FIELD"],
-            fg_color=SoP["EDITOR"], text_color=SoP["TEXT"], font=("Consolas", 12))
-        self.create_text_body.grid(
-            row=6, column=1, sticky="ew", padx=10, pady=8)
+            self.body_tabview.tab("Write"),
+            fg_color=SoP["EDITOR"], text_color=SoP["TEXT"], font=(
+                "Consolas", 12),
+            border_width=0)
+        self.create_text_body.pack(fill="both", expand=True)
+
+        # This is our new "Preview" textbox
+        self.create_text_preview = CTkCodeView(
+            self.body_tabview.tab("Preview"),
+            manager=self.manager
+        )
+        self.create_text_preview.pack(fill="both", expand=True)
+
+        # Add a command to update the preview when the tab is clicked
+        self.body_tabview.configure(command=self._on_tab_change)
 
         self.create_save_btn = ctk.CTkButton(
             self, text="💾 Save New Query", height=40,
@@ -79,6 +108,15 @@ class CreateView(ctk.CTkFrame):
             font=ctk.CTkFont(weight="bold"))
         self.create_save_btn.grid(
             row=2, column=0, columnspan=2, sticky="e", pady=20, padx=0)
+
+    def _on_tab_change(self):
+        """Called when the 'Write' or 'Preview' tab is clicked."""
+        selected_tab = self.body_tabview.get()
+        if selected_tab == "Preview":
+            # Get the code from the "Write" tab
+            body = self.create_text_body.get("1.0", "end")
+            # Apply highlighting to the "Preview" tab
+            self.create_text_preview.set_code(body)
 
     def clear_form(self):
         """Called by the main app after a successful refresh."""
@@ -91,8 +129,8 @@ class CreateView(ctk.CTkFrame):
         self.create_text_body.delete("1.0", "end")
 
     def _threaded_create_new_pq(self):
-        name = self.create_entry_name.get().strip()
         body = self.create_text_body.get("1.0", "end").strip()
+        name = self.create_entry_name.get().strip()
         if not name or not body:
             messagebox.showerror("Error", "Name and Query Body are required.")
             return

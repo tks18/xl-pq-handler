@@ -1,7 +1,7 @@
 # main.py
 import os
 import sys
-import argparse  # Import argparse
+import argparse
 
 # Import the main app class
 from .ui import PQManagerUI

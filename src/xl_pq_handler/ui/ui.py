@@ -15,7 +15,7 @@ INDEX_FILENAME = "index.json"
 
 
 class PQManagerUI:
-    def __init__(self, root_path: str):
+    def __init__(self, root_path: str, hwnd: int | None = None):
         ctk.set_appearance_mode("Dark")
 
         self.root = ctk.CTk()
@@ -32,7 +32,7 @@ class PQManagerUI:
 
         # NEW: Initialize the PQManager
         try:
-            self.manager = PQManager(root_path)
+            self.manager = PQManager(root_path, hwnd=hwnd)
         except Exception as e:
             messagebox.showerror(
                 "Fatal Error", f"Failed to initialize PQManager:\n{e}")

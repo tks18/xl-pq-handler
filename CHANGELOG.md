@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.3.2](https://github.com/tks18/xl-pq-handler/compare/v2.3.1...v2.3.2) (2025-10-29)
+
+
+### Features 🔥
+
+* **api:** allow tagging a particular instance of excel if multiple are open ([8d5cf51](https://github.com/tks18/xl-pq-handler/commit/8d5cf514f2409dad12dad77dec9ce2a44239b098))
+
+
+### Code Refactoring 🖌
+
+* use the new signatures to pass the hwnd of the excel instance ([52a64de](https://github.com/tks18/xl-pq-handler/commit/52a64de18c70a0226c06d0dde9231c3db892b8f8))
+
+
+### Others 🔧
+
+* update version v2.3.2 ([37912bd](https://github.com/tks18/xl-pq-handler/commit/37912bd41df4266ab11e5037d8316462e29dddea))
+
 ### [2.3.1](https://github.com/tks18/xl-pq-handler/compare/v2.3.0...v2.3.1) (2025-10-28)
 
 

@@ -22,9 +22,9 @@ class PQManager:
     excel, and dependency modules.
     """
 
-    def __init__(self, root: str):
+    def __init__(self, root: str, hwnd: int | None = None):
         self.store = PQFileStore(root=root)
-        self.excel = ExcelQueryService()
+        self.excel = ExcelQueryService(hwnd)
         self.resolver = DependencyResolver(self.store)
         self.parser = ExcelMCodeParser()
 

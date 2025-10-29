@@ -24,10 +24,16 @@ def run():
 
     parser.add_argument(
         "root_path",
-        nargs="?",  # Makes the argument optional
-        default="NOT_PROVIDED",  # Defaults to the *current working directory*
+        default="NOT_PROVIDED",
         help="The root directory of your Power Query repository. "
              "Defaults to the current directory if not provided."
+    )
+
+    parser.add_argument(
+        "excel_hwnd",
+        nargs="?",  # Makes the argument optional
+        default=None,
+        help="Excel Instance in which the UI should be launched"
     )
 
     args = parser.parse_args()
@@ -37,6 +43,7 @@ def run():
         print(f"Give a Correct Path to your Power Query Repository")
         sys.exit(1)
 
+    hwnd = int(args.excel_hwnd) if args.excel_hwnd is not None else None
     repo_path = os.path.abspath(args.root_path)
 
     if not os.path.exists(repo_path):
@@ -46,7 +53,7 @@ def run():
     print(f"Started UI in {repo_path}")
 
     # Run the app
-    PQManagerUI(repo_path)
+    PQManagerUI(repo_path, hwnd=hwnd)
 
 
 if __name__ == "__main__":

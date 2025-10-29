@@ -51,7 +51,8 @@ class TreeviewArea(ctk.CTkFrame):
                 col, text=col, command=lambda c=col: self.sort_callback(c))
 
         # Scrollbar
-        vsb = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
+        vsb = ctk.CTkScrollbar(self, orientation="vertical",
+                               command=self.tree.yview, width=15, bg_color=SoP["TREE_FIELD"], fg_color=SoP["EDITOR"], corner_radius=8)
         self.tree.configure(yscrollcommand=vsb.set)
         vsb.pack(side="right", fill="y")  # Pack scrollbar first
         self.tree.pack(side="left", fill="both", expand=True)  # Then pack tree

@@ -174,12 +174,10 @@ class ExcelMCodeParser:
         if not list_str.strip():
             return []  # Empty function: () => ...
 
-        # --- THIS IS THE FIX ---
         # 2. STRIP COMMENTS before splitting!
         #    This removes all //... and /*...*/ comments.
         comment_regex = re.compile(r'//[^\n]*|/\*.*?\*/', re.DOTALL)
         cleaned_list_str = re.sub(comment_regex, '', list_str)
-        # --- END FIX ---
 
         # 3. Split the *cleaned* string by commas
         param_parts = cleaned_list_str.split(',')

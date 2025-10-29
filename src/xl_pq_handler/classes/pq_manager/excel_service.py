@@ -10,8 +10,38 @@ logger = get_logger(__name__)
 class ExcelQueryService:
     """
     Handles all direct interaction with the Excel COM API via xlwings.
-    This class is 'dumb' and just executes Excel commands.
     """
+
+    def __init__(self, hwnd:  int | None = None) -> None:
+        self.hwnd = hwnd
+
+    def _get_excel_instance(self) -> xw.App:
+        """
+        Returns an xlwings App instance:
+        - If hwnd is provided, returns the specific Excel instance matching it.
+        - If hwnd is None, returns the active Excel instance.
+        """
+        try:
+            if self.hwnd is None:
+                # Return the active instance (same as the one in focus)
+                app = xw.apps.active
+                if app:
+                    return app
+                else:
+                    raise RuntimeError("No active Excel instance found.")
+
+            # Explicitly find Excel instance by HWND
+            for app in xw.apps:
+                try:
+                    if app.hwnd == self.hwnd:
+                        return app
+                except Exception:
+                    continue
+
+            raise RuntimeError(f"No Excel instance found for HWND={self.hwnd}")
+
+        except Exception as e:
+            raise RuntimeError(f"Error locating Excel instance: {e}")
 
     def _get_wb_api_from_path(self, file_path: str) -> Any:
         """(Helper) Opens a workbook and returns its API object."""
@@ -26,7 +56,7 @@ class ExcelQueryService:
     def _get_active_wb_api(self) -> Any:
         """(Helper) Gets the active workbook's API object."""
         try:
-            app = xw.apps.active
+            app = self._get_excel_instance()
             if not app:
                 raise RuntimeError("No active Excel instance found.")
 
@@ -43,7 +73,7 @@ class ExcelQueryService:
         Returns a list of strings.
         """
         try:
-            app = xw.apps.active
+            app = self._get_excel_instance()
             if not app:
                 logger.warning("No active Excel instance found.")
                 return []
@@ -60,7 +90,7 @@ class ExcelQueryService:
         """
         logger.info(f"Connecting to open workbook: {workbook_name}")
         try:
-            app = xw.apps.active
+            app = self._get_excel_instance()
             if not app:
                 raise RuntimeError("No active Excel instance found.")
 

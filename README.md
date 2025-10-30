@@ -44,7 +44,6 @@ _(The PQ IDE You Didn't Know You Needed ✨)_
 | decentralized file organization               | Auto-organized folders based on `category`              |
 | Editing metadata = Manual YAML torture        | Right-click -\> **Edit Metadata** -\> Save -\> Done ✅  |
 | "Which file uses that API?" -\> 🤷‍♂️            | **Data Sources tab** spills the tea ☕                  |
-| Blindly extracting queries from huge files    | **Preview** _before_ you extract, with syntax colors\!  |
 | Updating one function in 5 workbooks manually | Edit once -\> Refresh UI -\> Insert where needed        |
 
 This is that **main character energy** for your data workflow.

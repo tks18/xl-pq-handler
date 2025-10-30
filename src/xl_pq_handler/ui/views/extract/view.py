@@ -35,7 +35,7 @@ class ExtractView(ctk.CTkFrame):
         title = ctk.CTkLabel(
             self,
             text="Extract Queries from Excel",
-            font=ctk.CTkFont(size=20, weight="bold"),
+            font=ctk.CTkFont(family="Segoe UI", size=20, weight="bold"),
             text_color=SoP["ACCENT_HOVER"]
         )
         title.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 20))

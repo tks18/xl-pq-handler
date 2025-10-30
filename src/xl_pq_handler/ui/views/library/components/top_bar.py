@@ -34,7 +34,7 @@ class TopBar(ctk.CTkFrame):
             textvariable=self.search_var,  # Use the passed-in variable
             placeholder_text="Filter by name, category, description, tags...",
             fg_color=SoP["TREE_FIELD"], border_color=SoP["FRAME"],
-            text_color=SoP["TEXT"], height=35
+            text_color=SoP["TEXT"], height=35, font=ctk.CTkFont(family="Segoe UI")
         )
         self.search_entry.grid(row=0, column=0, sticky="ew", padx=(0, 10))
         # Binding remains, but calls the passed callback indirectly via search_var trace
@@ -48,7 +48,8 @@ class TopBar(ctk.CTkFrame):
             command=self.category_popup_callback,  # Call the passed-in function
             fg_color=SoP["FRAME"],
             border_color=SoP["ACCENT_DARK"], border_width=1,
-            hover_color=SoP["TREE_FIELD"], text_color=SoP["TEXT_DIM"]
+            hover_color=SoP["TREE_FIELD"], text_color=SoP["TEXT_DIM"],
+            font=ctk.CTkFont(family="Segoe UI")
         )
         self.cat_button.grid(row=0, column=1, padx=6)
 
@@ -56,7 +57,8 @@ class TopBar(ctk.CTkFrame):
         self.cat_summary_label = ctk.CTkLabel(
             self,
             text="All categories",
-            text_color=SoP["TEXT_DIM"]
+            text_color=SoP["TEXT_DIM"],
+            font=ctk.CTkFont(family="Segoe UI"),
         )
         self.cat_summary_label.grid(row=0, column=2, padx=(10, 5), sticky="w")
 

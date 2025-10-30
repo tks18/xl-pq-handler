@@ -33,7 +33,7 @@ class CreateView(ctk.CTkFrame):
 
         title = ctk.CTkLabel(
             self, text="Create New Power Query",
-            font=ctk.CTkFont(size=20, weight="bold"), text_color=SoP["ACCENT_HOVER"])
+            font=ctk.CTkFont(family="Segoe UI", size=22, weight="bold"), text_color=SoP["ACCENT_HOVER"])
         title.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 20))
 
         form_frame = ctk.CTkScrollableFrame(
@@ -46,7 +46,7 @@ class CreateView(ctk.CTkFrame):
                 row=row, column=0, sticky="w", padx=10, pady=8)
             entry = ctk.CTkEntry(
                 parent, border_color=SoP["TREE_FIELD"],
-                fg_color=SoP["EDITOR"], text_color=SoP["TEXT"])
+                fg_color=SoP["EDITOR"], text_color=SoP["TEXT"], corner_radius=8)
             entry.grid(row=row, column=1, sticky="ew", padx=10, pady=8)
             return entry
 
@@ -103,9 +103,8 @@ class CreateView(ctk.CTkFrame):
 
         self.create_save_btn = ctk.CTkButton(
             self, text="💾 Save New Query", height=40,
-            command=self._threaded_create_new_pq, fg_color=SoP["ACCENT"],
-            hover_color=SoP["ACCENT_HOVER"], text_color="#000000",
-            font=ctk.CTkFont(weight="bold"))
+            command=self._threaded_create_new_pq, fg_color="transparent", border_width=1, border_color=SoP["ACCENT"],
+            hover_color=SoP["TREE_FIELD"], text_color=SoP["ACCENT"], font=ctk.CTkFont(weight="bold"))
         self.create_save_btn.grid(
             row=2, column=0, columnspan=2, sticky="e", pady=20, padx=0)
 

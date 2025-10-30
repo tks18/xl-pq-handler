@@ -66,41 +66,43 @@ class BottomPanel(ctk.CTkFrame):
         wb_select_frame.grid_columnconfigure(0, weight=1)
 
         self.insert_wb_menu = ctk.CTkOptionMenu(
-            wb_select_frame, values=["Default (Active)"],
-            fg_color=SoP["EDITOR"], button_color=SoP["ACCENT_DARK"],
-            button_hover_color=SoP["ACCENT"], text_color=SoP["TEXT_DIM"],
-            height=35, dynamic_resizing=False
+            wb_select_frame, values=["Default (Active)"], fg_color=SoP["EDITOR"],
+            button_color=SoP["ACCENT_DARK"],
+            button_hover_color=SoP["ACCENT_HOVER"], text_color=SoP["TEXT_DIM"],
+            height=35, dynamic_resizing=False, font=ctk.CTkFont(family="Segoe UI")
         )
         self.insert_wb_menu.grid(row=0, column=0, sticky="ew")
 
         self.refresh_insert_wbs_btn = ctk.CTkButton(
             wb_select_frame, text="🔄", width=35, height=35,
-            font=ctk.CTkFont(size=20),
+            font=ctk.CTkFont(family="Segoe UI", size=20),
             command=self.refresh_wb_list_callback,  # Call parent's method
-            fg_color=SoP["TREE_FIELD"], hover_color=SoP["ACCENT_HOVER"]
+            fg_color="transparent", border_width=1, border_color=SoP["ACCENT"],
+            hover_color=SoP["TREE_FIELD"], text_color=SoP["ACCENT"]
         )
         self.refresh_insert_wbs_btn.grid(row=0, column=1, padx=(5, 0))
 
         # Main action buttons
         self.insert_btn = ctk.CTkButton(
-            action_panel, text="➕ Insert Selected", height=40,
+            action_panel, text="➕ Insert Selected", height=35,
             command=self.insert_callback,  # Call parent's insert method
-            fg_color=SoP["ACCENT"], hover_color=SoP["ACCENT_HOVER"],
-            text_color="#000000", font=ctk.CTkFont(weight="bold")
+            fg_color="transparent", border_width=1, border_color=SoP["ACCENT"],
+            hover_color=SoP["TREE_FIELD"], text_color=SoP["ACCENT"], font=ctk.CTkFont(
+                family="Segoe UI")
         )
-        self.insert_btn.grid(row=1, column=0, sticky="ew", pady=(5, 10))
+        self.insert_btn.grid(row=1, column=0, sticky="ew", pady=5)
 
         self.clear_btn = ctk.CTkButton(
             action_panel, text="Clear Selection", height=35,
             command=self.clear_selection_callback,  # Call parent's clear method
             fg_color="transparent", border_width=1,
             border_color=SoP["TEXT_DIM"], hover_color=SoP["TREE_FIELD"],
-            text_color=SoP["TEXT_DIM"]
+            text_color=SoP["TEXT_DIM"], font=ctk.CTkFont(family="Segoe UI")
         )
         self.clear_btn.grid(row=2, column=0, sticky="ew", pady=5)
 
         self.selection_count_lbl = ctk.CTkLabel(
-            action_panel, text="Selected: 0", text_color=SoP["TEXT_DIM"])
+            action_panel, text="Selected: 0", text_color=SoP["TEXT_DIM"], font=ctk.CTkFont(family="Segoe UI"))
         self.selection_count_lbl.grid(row=3, column=0, sticky="ew", pady=10)
 
     def _create_tab_widgets(self, tabview):

@@ -11,8 +11,6 @@ from ..classes import PQManager
 from .theme import SoP
 from .views import LibraryView, CreateView, ExtractView
 
-INDEX_FILENAME = "index.json"
-
 
 class PQManagerUI:
     def __init__(self, root_path: str, hwnd: int | None = None):
@@ -80,7 +78,7 @@ class PQManagerUI:
         self.refresh_btn = ctk.CTkButton(
             self.activity_bar, text="🔄", font=ctk.CTkFont(size=22), width=50, height=50,
             command=self.refresh_all_views, fg_color="transparent",
-            hover_color=SoP["ACCENT_HOVER"], text_color=SoP["TEXT_DIM"])
+            hover_color=SoP["TREE_FIELD"], text_color=SoP["TEXT_DIM"])
         self.refresh_btn.grid(row=4, column=0, sticky="s", padx=5, pady=10)
 
         # --- Main Panel (to hold the views) ---
@@ -145,6 +143,7 @@ class PQManagerUI:
         that depend on it.
         """
         try:
+            self.refresh_btn.configure(text_color=SoP["ACCENT"])
             self.manager.build_index()
             # Tell LibraryView to reload its data
             self.views["library"].refresh_data()
@@ -153,9 +152,11 @@ class PQManagerUI:
 
             messagebox.showinfo("Refresh Complete",
                                 "The query index has been rebuilt.")
+            self.refresh_btn.configure(text_color=SoP["TEXT_DIM"])
         except Exception as e:
             messagebox.showerror(
                 "Refresh Error", f"Failed to rebuild index or refresh UI:\n{e}")
+            self.refresh_btn.configure(text_color=SoP["TEXT_DIM"])
 
     def _on_close(self):
         """Handle window close event."""

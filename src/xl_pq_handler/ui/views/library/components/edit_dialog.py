@@ -38,11 +38,11 @@ class EditMetadataDialog(ctk.CTkToplevel):
         form_frame.grid_columnconfigure(1, weight=1)
 
         def create_form_row(parent, label, row):
-            ctk.CTkLabel(parent, text=label, text_color=SoP["TEXT_DIM"]).grid(
+            ctk.CTkLabel(parent, text=label, text_color=SoP["TEXT_DIM"], font=ctk.CTkFont(family="Segoe UI")).grid(
                 row=row, column=0, sticky="w", padx=10, pady=8)
             entry = ctk.CTkEntry(
                 parent, border_color=SoP["TREE_FIELD"],
-                fg_color=SoP["EDITOR"], text_color=SoP["TEXT"])
+                fg_color=SoP["EDITOR"], text_color=SoP["TEXT"], font=ctk.CTkFont(family="Segoe UI"))
             entry.grid(row=row, column=1, sticky="ew", padx=10, pady=8)
             return entry
 
@@ -52,32 +52,32 @@ class EditMetadataDialog(ctk.CTkToplevel):
         self.entry_tags = create_form_row(form_frame, "Tags (csv)", 3)
 
         # Dependencies Row (with Auto-Detect)
-        ctk.CTkLabel(form_frame, text="Dependencies (csv)", text_color=SoP["TEXT_DIM"]).grid(
+        ctk.CTkLabel(form_frame, text="Dependencies (csv)", text_color=SoP["TEXT_DIM"], font=ctk.CTkFont(family="Segoe UI")).grid(
             row=4, column=0, sticky="w", padx=10, pady=8)
         dep_frame = ctk.CTkFrame(form_frame, fg_color="transparent")
         dep_frame.grid(row=4, column=1, sticky="ew")
         dep_frame.grid_columnconfigure(0, weight=1)
         self.entry_deps = ctk.CTkEntry(
             dep_frame, border_color=SoP["TREE_FIELD"],
-            fg_color=SoP["EDITOR"], text_color=SoP["TEXT"])
-        self.entry_deps.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+            fg_color=SoP["EDITOR"], text_color=SoP["TEXT"], font=ctk.CTkFont(family="Segoe UI"))
+        self.entry_deps.grid(row=0, column=0, sticky="ew", padx=10, pady=8)
         auto_detect_btn = ctk.CTkButton(
             dep_frame, text="Auto-Detect", width=100,
             fg_color=SoP["TREE_FIELD"], hover_color=SoP["ACCENT_DARK"],
-            command=self._auto_detect_deps
+            command=self._auto_detect_deps, font=ctk.CTkFont(family="Segoe UI")
         )
         auto_detect_btn.grid(row=0, column=1, sticky="e")
 
         # Description Textbox
-        ctk.CTkLabel(form_frame, text="Description", text_color=SoP["TEXT_DIM"]).grid(
+        ctk.CTkLabel(form_frame, text="Description", text_color=SoP["TEXT_DIM"], font=ctk.CTkFont(family="Segoe UI")).grid(
             row=5, column=0, sticky="w", padx=10, pady=8)
         self.text_desc = ctk.CTkTextbox(
             form_frame, height=80, border_color=SoP["TREE_FIELD"],
-            fg_color=SoP["EDITOR"], text_color=SoP["TEXT"])
+            fg_color=SoP["EDITOR"], text_color=SoP["TEXT"], font=ctk.CTkFont(family="Segoe UI"))
         self.text_desc.grid(row=5, column=1, sticky="ew", padx=10, pady=8)
 
         # Read-Only Code View
-        ctk.CTkLabel(form_frame, text="Query Body (Read-Only)", text_color=SoP["TEXT_DIM"]).grid(
+        ctk.CTkLabel(form_frame, text="Query Body (Read-Only)", text_color=SoP["TEXT_DIM"], font=ctk.CTkFont(family="Segoe UI")).grid(
             row=6, column=0, sticky="nw", padx=10, pady=8)
         self.code_view = CTkCodeView(
             form_frame,
@@ -89,9 +89,8 @@ class EditMetadataDialog(ctk.CTkToplevel):
         # Save Button
         save_btn = ctk.CTkButton(
             self, text="💾 Save Changes", height=40,
-            command=self._on_save, fg_color=SoP["ACCENT"],
-            hover_color=SoP["ACCENT_HOVER"], text_color="#000000",
-            font=ctk.CTkFont(weight="bold"))
+            command=self._on_save, fg_color="transparent", border_width=1, border_color=SoP["ACCENT"],
+            hover_color=SoP["TREE_FIELD"], text_color=SoP["ACCENT"], font=ctk.CTkFont(family="Segoe UI"))
         save_btn.pack(side="bottom", fill="x", padx=15, pady=15)
 
     def _prefill_form(self):

@@ -1,1 +1,1 @@
-from .base import PrimaryButton
+from .buttons import PrimaryButton
